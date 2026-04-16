@@ -38,11 +38,29 @@ yarn dev
 bun run dev
 ```
 
+## Environment
+
+Copy `.env.example` to `.env` and fill in values:
+
+- `NUXT_PASSWORD_AES_SECRET`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_NAME`
+
+## Database Scripts
+
+```bash
+node check_db.js
+node init_tables.js
+node seed_data.js
+```
+
 ## Production
 
 Build the application for production:
 
-```bash
 # npm
 npm run build
 
