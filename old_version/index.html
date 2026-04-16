@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>题海拾贝 - 首页</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/common.css">
+</head>
+<body>
+
+<div id="page-home" class="page">
+    <div style="padding-bottom:80px;">
+        <!-- 顶部栏 -->
+        <div style="padding:16px 20px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div id="homeAvatar" style="width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:16px;">U</div>
+                    <div>
+                        <div style="font-weight:700;font-size:16px;" id="homeGreeting">早上好</div>
+                        <div style="color:var(--muted);font-size:12px;" id="homeUsername">学习达人</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:12px;">
+                    <button onclick="navigateTo('stats.html')" style="width:40px;height:40px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--fg2);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-chart-line" style="font-size:16px;"></i>
+                    </button>
+                    <button onclick="navigateTo('notifications.html')" style="width:40px;height:40px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--fg2);cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;">
+                        <i class="fas fa-bell" style="font-size:16px;"></i>
+                        <span class="badge">3</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 每日打卡卡片 -->
+        <div style="padding:16px 20px;">
+            <div class="g-card" style="background:linear-gradient(135deg,#0D9488,#0F766E);border:none;position:relative;overflow:hidden;">
+                <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.08);"></div>
+                <div style="position:absolute;bottom:-30px;right:40px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.05);"></div>
+                <div style="position:relative;z-index:2;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                        <div>
+                            <div style="font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:2px;">今日学习目标</div>
+                            <div style="font-size:22px;font-weight:700;color:#fff;" id="dailyGoalText">已完成 0/30 题</div>
+                        </div>
+                        <button id="checkinBtn" onclick="handleCheckin()" class="g-btn" style="background:rgba(255,255,255,0.2);color:#fff;padding:8px 20px;border-radius:10px;backdrop-filter:blur(8px);">
+                            <i class="fas fa-check-circle"></i> 打卡
+                        </button>
+                    </div>
+                    <div class="progress-bar" style="background:rgba(255,255,255,0.15);">
+                        <div class="progress-fill" id="dailyProgress" style="width:0%;background:linear-gradient(90deg,#FBBF24,var(--warm));"></div>
+                    </div>
+                    <div style="display:flex;gap:6px;margin-top:12px;" id="weekDots"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学习概览 -->
+        <div style="padding:0 20px 16px;">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+                <div class="g-card" style="text-align:center;padding:14px 8px;">
+                    <div style="font-size:24px;font-weight:900;color:var(--accent2);" id="statTotal">0</div>
+                    <div style="font-size:11px;color:var(--muted);margin-top:2px;">已答题数</div>
+                </div>
+                <div class="g-card" style="text-align:center;padding:14px 8px;">
+                    <div style="font-size:24px;font-weight:900;color:var(--success);" id="statAccuracy">0%</div>
+                    <div style="font-size:11px;color:var(--muted);margin-top:2px;">正确率</div>
+                </div>
+                <div class="g-card" style="text-align:center;padding:14px 8px;">
+                    <div style="font-size:24px;font-weight:900;color:var(--warm);" id="statStreak">0</div>
+                    <div style="font-size:11px;color:var(--muted);margin-top:2px;">连续打卡</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 推荐题库 -->
+        <div style="padding:0 20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <h2 style="font-size:18px;font-weight:700;">热门题库</h2>
+                <button onclick="navigateTo('bank.html')" style="background:none;border:none;color:var(--accent2);font-size:13px;cursor:pointer;">查看全部 <i class="fas fa-chevron-right" style="font-size:10px;"></i></button>
+            </div>
+        </div>
+        <div class="scroll-x" style="padding:0 0 16px;">
+            <div style="display:flex;gap:12px;padding:0 20px;" id="hotBanks"></div>
+        </div>
+
+        <!-- 最近练习 -->
+        <div style="padding:0 20px;">
+            <h2 style="font-size:18px;font-weight:700;margin-bottom:12px;">继续学习</h2>
+            <div id="recentBanks" style="display:flex;flex-direction:column;gap:12px;"></div>
+        </div>
+
+        <!-- 学习排行 -->
+        <div style="padding:20px;">
+            <h2 style="font-size:18px;font-weight:700;margin-bottom:12px;">学习排行榜</h2>
+            <div class="g-card" id="rankList"></div>
+        </div>
+    </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>
