@@ -2,6 +2,9 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  runtimeConfig: {
+    passwordAesSecret: process.env.NUXT_PASSWORD_AES_SECRET || ''
+  },
   modules: [
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt',

@@ -1,6 +1,8 @@
 import pool from '../../utils/db'
+import { encryptPassword } from '../../utils/passwordCrypto'
 
 export default defineEventHandler(async (event) => {
+  const { passwordAesSecret } = useRuntimeConfig()
   const body = await readBody(event)
   const { name, phone, password } = body
 
@@ -8,10 +10,14 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: '参数不完整' })
   }
 
+  if (!passwordAesSecret) {
+    throw createError({ statusCode: 500, message: '未配置密码加密密钥' })
+  }
+
   try {
     const [result] = await pool.execute(
       'INSERT INTO users (name, phone, password) VALUES (?, ?, ?)',
-      [name, phone, password]
+      [name, phone, encryptPassword(password, passwordAesSecret)]
     )
 
     const insertId = (result as any).insertId
