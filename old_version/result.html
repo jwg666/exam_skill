@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>题海拾贝 - 答题结果</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/common.css">
+</head>
+<body>
+
+<div id="page-result" class="page">
+    <div style="min-height:100vh;padding:20px;padding-bottom:40px;">
+        <div style="text-align:center;padding-top:30px;">
+            <!-- 成绩环 -->
+            <div class="ring-progress" style="margin-bottom:20px;">
+                <svg width="160" height="160">
+                    <circle cx="80" cy="80" r="68" fill="none" stroke="var(--card2)" stroke-width="10"/>
+                    <circle cx="80" cy="80" r="68" fill="none" stroke="var(--accent2)" stroke-width="10"
+                        stroke-dasharray="427.3" id="resultRing" stroke-linecap="round"
+                        style="transition:stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1);"/>
+                </svg>
+                <div class="ring-text">
+                    <div style="font-size:36px;font-weight:900;color:var(--accent2);" id="resultScore">0</div>
+                    <div style="font-size:12px;color:var(--muted);">得分</div>
+                </div>
+            </div>
+
+            <h2 style="font-size:20px;font-weight:700;margin-bottom:4px;" id="resultTitle">练习完成</h2>
+            <p style="color:var(--muted);font-size:14px;" id="resultSubtitle">继续努力！</p>
+        </div>
+
+        <!-- 统计数据 -->
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:28px;">
+            <div class="g-card" style="text-align:center;">
+                <div style="font-size:20px;font-weight:700;color:var(--success);" id="resultCorrect">0</div>
+                <div style="font-size:12px;color:var(--muted);">答对</div>
+            </div>
+            <div class="g-card" style="text-align:center;">
+                <div style="font-size:20px;font-weight:700;color:var(--danger);" id="resultWrong">0</div>
+                <div style="font-size:12px;color:var(--muted);">答错</div>
+            </div>
+            <div class="g-card" style="text-align:center;">
+                <div style="font-size:20px;font-weight:700;color:var(--warm);" id="resultTime">0:00</div>
+                <div style="font-size:12px;color:var(--muted);">用时</div>
+            </div>
+            <div class="g-card" style="text-align:center;">
+                <div style="font-size:20px;font-weight:700;color:var(--info);" id="resultAccuracy">0%</div>
+                <div style="font-size:12px;color:var(--muted);">正确率</div>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div style="margin-top:28px;display:flex;flex-direction:column;gap:12px;">
+            <button onclick="reviewWrongQ()" class="g-btn g-btn-ghost" style="width:100%;" id="reviewWrongBtn">
+                <i class="fas fa-times-circle"></i> 查看错题
+            </button>
+            <button onclick="retryQuiz()" class="g-btn g-btn-primary" style="width:100%;">
+                <i class="fas fa-redo"></i> 再来一次
+            </button>
+            <button onclick="navigateTo('index.html')" class="g-btn g-btn-ghost" style="width:100%;">
+                <i class="fas fa-home"></i> 返回首页
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/quiz.js"></script>
+<script>
+    window.onload = function() {
+        checkLoginAuth();
+        if (appState.user) {
+            renderResult();
+        }
+    };
+</script>
+</body>
+</html>

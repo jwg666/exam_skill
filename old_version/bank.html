@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>题海拾贝 - 题库中心</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/common.css">
+</head>
+<body>
+
+<div id="page-bank" class="page">
+    <div style="padding-bottom:80px;">
+        <div class="page-header" style="padding:16px 20px;">
+            <h1 style="font-size:22px;font-weight:900;">题库中心</h1>
+        </div>
+
+        <!-- 搜索栏 -->
+        <div style="padding:12px 20px;">
+            <div style="position:relative;">
+                <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);"></i>
+                <input type="text" class="g-input" style="padding-left:40px;border-radius:24px;" placeholder="搜索题库..." id="bankSearch" oninput="filterBanks()">
+            </div>
+        </div>
+
+        <!-- 分类标签 -->
+        <div class="scroll-x" style="padding:0 20px 12px;">
+            <div style="display:flex;gap:8px;" id="bankCategories"></div>
+        </div>
+
+        <!-- 题库列表 -->
+        <div style="padding:0 20px;" id="bankList"></div>
+    </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/bank.js?v=2"></script>
+<script>
+    window.onload = function() {
+        checkLoginAuth();
+        if (appState.user) {
+            renderBankList();
+            renderBottomNav(1);
+        }
+    };
+</script>
+</body>
+</html>

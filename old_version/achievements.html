@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>题海拾贝 - 成就徽章</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/common.css">
+</head>
+<body>
+
+<div id="page-achievements" class="page">
+    <div style="padding-bottom:40px;">
+        <div class="page-header" style="padding:16px 20px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <button onclick="goBack()" style="width:36px;height:36px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--fg);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h1 style="font-size:18px;font-weight:700;">成就徽章</h1>
+            </div>
+        </div>
+        <div style="padding:20px; display:grid; grid-template-columns:repeat(2,1fr); gap:12px;" id="achieveGrid"></div>
+    </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/profile.js"></script>
+<script>
+    window.onload = function() {
+        checkLoginAuth();
+        if (appState.user) {
+            renderAchievements();
+        }
+    };
+</script>
+</body>
+</html>
