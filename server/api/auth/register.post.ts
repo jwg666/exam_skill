@@ -34,6 +34,9 @@ export default defineEventHandler(async (event) => {
     if (err.code === 'ER_DUP_ENTRY') {
       throw createError({ statusCode: 409, message: '该手机号已注册' })
     }
+    if (err?.statusCode) {
+      throw err
+    }
     throw createError({ statusCode: 500, message: '服务器错误' })
   }
 })
