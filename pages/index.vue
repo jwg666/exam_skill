@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useAppStore } from '~/stores/app'
 import { questionBanks } from '~/utils/data'
+import { useNotificationStore } from '~/stores/notifications'
 
 const appStore = useAppStore()
+const notificationStore = useNotificationStore()
 const router = useRouter()
 
 const getGreeting = () => {
@@ -18,15 +20,19 @@ const getGreeting = () => {
 
 const checkIn = () => {
   if (appStore.checkedInToday) return
-  
-  const today = new Date().toDateString()
-  appStore.checkedDays.push(today)
-  appStore.streak += 1
-  appStore.checkedInToday = true
-  
+  const ok = appStore.checkIn()
+  if (!ok) return
+
   const { $toast } = useNuxtApp()
   $toast.success(`打卡成功！连续打卡 ${appStore.streak} 天`)
-  
+
+  notificationStore.ensureSeeded()
+  notificationStore.add({
+    type: 'system',
+    title: '打卡成功',
+    content: `你已连续打卡 ${appStore.streak} 天，继续保持！`
+  })
+
   if (appStore.streak >= 3) appStore.checkAchievement('streak_3')
   if (appStore.streak >= 7) appStore.checkAchievement('streak_7')
   if (appStore.streak >= 30) appStore.checkAchievement('streak_30')
@@ -48,7 +54,7 @@ const recentBanks = computed(() => {
           <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-[#0B1120]"></div>
         </div>
         <div>
-          <h2 class="text-xl font-bold tracking-tight">{{ getGreeting() }}，{{ appStore.user.username }}</h2>
+          <h2 class="text-xl font-bold tracking-tight">{{ getGreeting() }}，{{ appStore.user.username || appStore.user.name }}</h2>
           <p class="text-xs text-[#94A3B8] mt-1 flex items-center gap-1.5">
             <i class="fas fa-fire text-orange-500"></i> 已连续学习 {{ appStore.streak }} 天
           </p>
@@ -56,7 +62,7 @@ const recentBanks = computed(() => {
       </div>
       <div class="w-10 h-10 rounded-full bg-[#162032] flex items-center justify-center text-[#E8EDF5] cursor-pointer hover:bg-[#1C2942] transition-colors relative" @click="router.push('/notifications')">
         <i class="far fa-bell text-lg"></i>
-        <div class="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+        <div v-if="notificationStore.unreadCount > 0" class="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
       </div>
     </div>
 

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useAppStore } from '~/stores/app'
+import { useNotificationStore } from '~/stores/notifications'
 
 const appStore = useAppStore()
+const notificationStore = useNotificationStore()
 const router = useRouter()
 </script>
 
@@ -14,13 +16,14 @@ const router = useRouter()
         <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-[3px] border-[#0B1120]"></div>
       </div>
       <div class="flex-1">
-        <h2 class="text-2xl font-bold tracking-tight mb-1">{{ appStore.user.username }}</h2>
+        <h2 class="text-2xl font-bold tracking-tight mb-1">{{ appStore.user.username || appStore.user.name }}</h2>
         <p class="text-xs text-[#94A3B8] font-medium bg-[#162032] inline-block px-2 py-0.5 rounded-md border border-[#243049]">
           <i class="fas fa-id-badge text-teal-400 mr-1"></i> 极客学员
         </p>
       </div>
-      <div class="w-10 h-10 rounded-full bg-[#162032] flex items-center justify-center text-[#E8EDF5] cursor-pointer hover:bg-[#1C2942] transition-colors" @click="router.push('/notifications')">
+      <div class="w-10 h-10 rounded-full bg-[#162032] flex items-center justify-center text-[#E8EDF5] cursor-pointer hover:bg-[#1C2942] transition-colors relative" @click="router.push('/notifications')">
         <i class="far fa-bell text-lg"></i>
+        <div v-if="notificationStore.unreadCount > 0" class="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
       </div>
     </div>
 
@@ -76,6 +79,16 @@ const router = useRouter()
             <i class="fas fa-trophy text-purple-400"></i>
           </div>
           <span class="font-bold">成就中心</span>
+        </div>
+        <i class="fas fa-chevron-right text-xs text-[#64748B]"></i>
+      </div>
+
+      <div class="g-card p-4 flex items-center justify-between cursor-pointer hover:border-[#14B8A6]/50 transition-colors group" @click="router.push('/settings')">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center border border-teal-500/20 group-hover:scale-110 transition-transform">
+            <i class="fas fa-gear text-teal-400"></i>
+          </div>
+          <span class="font-bold">系统设置</span>
         </div>
         <i class="fas fa-chevron-right text-xs text-[#64748B]"></i>
       </div>

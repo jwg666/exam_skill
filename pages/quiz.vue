@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useAppStore } from '~/stores/app'
 import { useQuizStore } from '~/stores/quiz'
+import { removeWrongByIds } from '~/utils/quiz'
 
 definePageMeta({ layout: false })
 
@@ -74,9 +75,11 @@ const submitAnswer = () => {
   if (isCorrect) {
     appStore.totalCorrect++
     if (quizStore.mode === 'practice') {
-      const p = appStore.bankProgress[quizStore.bankId!] || 0
-      if (quizStore.currentIdx >= p) {
-        appStore.bankProgress[quizStore.bankId!] = quizStore.currentIdx + 1
+      if (quizStore.progressEnabled) {
+        const p = appStore.bankProgress[quizStore.bankId!] || 0
+        if (quizStore.currentIdx >= p) {
+          appStore.bankProgress[quizStore.bankId!] = quizStore.currentIdx + 1
+        }
       }
     }
   } else {
@@ -124,10 +127,15 @@ const finishQuiz = async () => {
   const total = quizStore.questions.length
   let correct = 0
   const wrongQuestions = []
+  const masteredWrongIds: Array<string | number> = []
   
   for (let i = 0; i < total; i++) {
     if (quizStore.answers[i] === quizStore.questions[i].ans) {
       correct++
+      if (quizStore.sessionType === 'wrong_retry') {
+        const id = quizStore.questions[i]?.id
+        if (id !== undefined && id !== null) masteredWrongIds.push(id)
+      }
     } else {
       wrongQuestions.push(quizStore.questions[i].id)
     }
@@ -151,6 +159,16 @@ const finishQuiz = async () => {
     })
   } catch(e) {
     console.error('Submit to server failed', e)
+  }
+
+  if (quizStore.sessionType === 'wrong_retry' && masteredWrongIds.length > 0) {
+    const before = appStore.wrongBook.length
+    appStore.wrongBook = removeWrongByIds(appStore.wrongBook, masteredWrongIds)
+    const removed = Math.max(0, before - appStore.wrongBook.length)
+    if (removed > 0) $toast.success(`已掌握并移除 ${removed} 题`)
+    if (appStore.wrongBook.length === 0) {
+      appStore.checkAchievement('wrong_clear')
+    }
   }
 
   if (appStore.history) {

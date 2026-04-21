@@ -25,6 +25,28 @@
     --info: #3B82F6;
 }
 
+html { color-scheme: dark; }
+html.theme-light { color-scheme: light; }
+
+html.theme-light {
+    --bg: #F8FAFC;
+    --bg2: #FFFFFF;
+    --card: #FFFFFF;
+    --card2: #F1F5F9;
+    --border: #E2E8F0;
+    --fg: #0F172A;
+    --fg2: #334155;
+    --muted: #64748B;
+    --accent: #0D9488;
+    --accent2: #0F766E;
+    --accent-glow: rgba(13,148,136,0.18);
+    --warm: #F97316;
+    --warm2: #FDBA74;
+    --danger: #DC2626;
+    --success: #16A34A;
+    --info: #2563EB;
+}
+
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 body {
     font-family: 'Noto Sans SC', sans-serif;

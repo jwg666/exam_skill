@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useAppStore } from '~/stores/app'
 import { useQuizStore } from '~/stores/quiz'
+import { getWrongQuestionsForBank, pickRandom } from '~/utils/quiz'
 
 const route = useRoute()
 const router = useRouter()
@@ -16,15 +17,46 @@ if (!bank.value) {
 
 const progress = computed(() => appStore.bankProgress[bankId] || 0)
 const percentage = computed(() => bank.value ? Math.round((progress.value / bank.value.total) * 100) : 0)
+const wrongCount = computed(() => getWrongQuestionsForBank(appStore.wrongBook, bankId).length)
 
 const startQuizRoute = (mode: 'practice'|'exam', startIndex = progress.value) => {
   if (!bank.value) return
-  quizStore.resetQuiz()
-  quizStore.bankId = bankId
-  quizStore.mode = mode
-  quizStore.questions = bank.value.questions
-  quizStore.currentIdx = startIndex
-  quizStore.startTime = Date.now()
+  quizStore.startSession({
+    bankId,
+    questions: bank.value.questions,
+    mode,
+    startIndex,
+    sessionType: mode === 'exam' ? 'bank_exam' : 'bank_practice',
+    progressEnabled: mode === 'practice'
+  })
+  router.push('/quiz')
+}
+
+const startWrongRetry = () => {
+  const qs = getWrongQuestionsForBank(appStore.wrongBook, bankId)
+  if (qs.length === 0) return
+  quizStore.startSession({
+    bankId,
+    questions: qs,
+    mode: 'practice',
+    startIndex: 0,
+    sessionType: 'wrong_retry',
+    progressEnabled: false
+  })
+  router.push('/quiz')
+}
+
+const startRandom10 = () => {
+  if (!bank.value) return
+  const qs = pickRandom(bank.value.questions || [], 10)
+  quizStore.startSession({
+    bankId,
+    questions: qs,
+    mode: 'practice',
+    startIndex: 0,
+    sessionType: 'bank_random10',
+    progressEnabled: false
+  })
   router.push('/quiz')
 }
 
@@ -74,6 +106,21 @@ const isDone = (i: number) => i < progress.value
         </button>
         <button class="g-btn g-btn-ghost flex-1 border-[#243049] bg-[#162032] hover:bg-[#1C2942] hover:text-white" @click="startQuizRoute('exam', 0)">
           <i class="fas fa-file-alt text-sm"></i> 模拟考试
+        </button>
+      </div>
+
+      <div class="flex gap-4 mt-4 fade-up" style="animation-delay:0.15s">
+        <button
+          class="g-btn g-btn-ghost flex-1 border-[#243049] bg-[#162032] hover:bg-[#1C2942] hover:text-white"
+          :disabled="wrongCount === 0"
+          :class="{ 'opacity-50 cursor-not-allowed': wrongCount === 0 }"
+          @click="startWrongRetry"
+        >
+          <i class="fas fa-redo text-sm"></i> 错题重练
+          <span class="ml-1 text-xs text-[#94A3B8]">({{ wrongCount }})</span>
+        </button>
+        <button class="g-btn g-btn-ghost flex-1 border-[#243049] bg-[#162032] hover:bg-[#1C2942] hover:text-white" @click="startRandom10">
+          <i class="fas fa-random text-sm"></i> 随机10题
         </button>
       </div>
 
