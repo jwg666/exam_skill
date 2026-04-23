@@ -29,20 +29,6 @@ function shouldUnlockMilestone(prev: number, next: number, at: number) {
   return prev < at && next >= at
 }
 
-async function insertAchievementNotificationTemplate(conn: mysql.PoolConnection, userId: number, achievementId: string) {
-  const runtime = await loadRuntimeRulesForServer()
-  const tpl = (runtime.rules as any)?.achievements?.templates?.[achievementId] || (runtime.rules as any)?.notifications?.templates?.[`achievement.${achievementId}`]
-  if (!tpl) return
-  const title = (tpl.title || '').toString().trim()
-  const content = (tpl.content || '').toString().trim()
-  if (!title && !content) return
-  await conn.execute(`INSERT INTO notifications (user_id, type, title, content) VALUES (?, 'achievement', ?, ?)`, [
-    userId,
-    title || `解锁成就：${achievementId}`,
-    content || '你解锁了一个新的成就，继续保持！',
-  ])
-}
-
 export async function unlockAchievementsByRuntimeRules(conn: mysql.PoolConnection, userId: number, ctx: UnlockContext) {
   const runtime = await loadRuntimeRulesForServer()
   const rules = (runtime.rules as any)?.achievements?.rules
@@ -91,8 +77,6 @@ export async function unlockAchievementsByRuntimeRules(conn: mysql.PoolConnectio
     const inserted = await tryUnlockAchievement(conn, userId, id)
     if (inserted) {
       unlocked.push(id)
-      // 如果规则侧提供模板，则额外插入一条模板通知（不会替换默认通知；MVP 先叠加）
-      await insertAchievementNotificationTemplate(conn, userId, id).catch(() => {})
     }
   }
 

@@ -5,6 +5,7 @@ import { loadGamificationRulesForServer } from '../../utils/gamificationLoader'
 import { buildUserAuthPayload } from '../../utils/userPayload'
 import { unlockAccuracyAchievements, unlockMilestoneQuizAchievements, tryUnlockAchievement } from '../../utils/achievements'
 import { unlockAchievementsByRuntimeRules } from '../../utils/achievementRules'
+import { renderNotificationFromTemplateOrFallback } from '../../utils/notificationTemplates'
 
 function ymdToday() {
   const d = new Date()
@@ -98,10 +99,18 @@ export default defineEventHandler(async (event) => {
     const nextExp = Number(fresh.exp || 0)
     const nextLevel = computeLevel(nextExp, rules.expLevelThresholds).level
     if (nextLevel > prevLevel) {
+      const levelMsg = await renderNotificationFromTemplateOrFallback({
+        key: 'level.up',
+        vars: { fromLevel: prevLevel, toLevel: nextLevel, exp: nextExp },
+        fallback: {
+          title: '等级提升',
+          content: `恭喜升级到 Lv.${nextLevel}！继续刷题可获得更多经验。`,
+        },
+      })
       await conn.execute(`INSERT INTO notifications (user_id, type, title, content) VALUES (?, 'system', ?, ?)`, [
         uid,
-        '等级提升',
-        `恭喜升级到 Lv.${nextLevel}！继续刷题可获得更多经验。`,
+        levelMsg.title,
+        levelMsg.content,
       ])
     }
 

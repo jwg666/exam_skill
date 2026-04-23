@@ -5,6 +5,7 @@ import { computeLevel } from '../../utils/gamification'
 import { loadGamificationRulesForServer } from '../../utils/gamificationLoader'
 import { unlockStreakAchievements } from '../../utils/achievements'
 import { unlockAchievementsByRuntimeRules } from '../../utils/achievementRules'
+import { renderNotificationFromTemplateOrFallback } from '../../utils/notificationTemplates'
 import { readUserId, requireFiniteUserId } from './_utils'
 
 function ymd(d: Date) {
@@ -77,10 +78,18 @@ export default defineEventHandler(async (event) => {
 
     await conn.execute(`UPDATE users SET streak = ? WHERE id = ?`, [streak, userId])
 
+    const checkinMsg = await renderNotificationFromTemplateOrFallback({
+      key: 'checkin.success',
+      vars: { streak, gainedExp, date: today },
+      fallback: {
+        title: '打卡成功',
+        content: `你已连续打卡 ${streak} 天，继续保持！`,
+      },
+    })
     await conn.execute(`INSERT INTO notifications (user_id, type, title, content) VALUES (?, 'system', ?, ?)`, [
       userId,
-      '打卡成功',
-      `你已连续打卡 ${streak} 天，继续保持！`,
+      checkinMsg.title,
+      checkinMsg.content,
     ])
 
     const byRules = await unlockAchievementsByRuntimeRules(conn, userId, {
@@ -95,10 +104,18 @@ export default defineEventHandler(async (event) => {
     const nextExp = Number(fresh.exp || 0)
     const nextLevel = computeLevel(nextExp, rules.expLevelThresholds).level
     if (nextLevel > prevLevel) {
+      const levelMsg = await renderNotificationFromTemplateOrFallback({
+        key: 'level.up',
+        vars: { fromLevel: prevLevel, toLevel: nextLevel, exp: nextExp },
+        fallback: {
+          title: '等级提升',
+          content: `恭喜升级到 Lv.${nextLevel}！继续刷题可获得更多经验。`,
+        },
+      })
       await conn.execute(`INSERT INTO notifications (user_id, type, title, content) VALUES (?, 'system', ?, ?)`, [
         userId,
-        '等级提升',
-        `恭喜升级到 Lv.${nextLevel}！继续刷题可获得更多经验。`,
+        levelMsg.title,
+        levelMsg.content,
       ])
     }
 

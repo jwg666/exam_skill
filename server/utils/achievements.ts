@@ -1,4 +1,5 @@
 import type mysql from 'mysql2/promise'
+import { renderNotificationFromTemplateOrFallback } from './notificationTemplates'
 
 const ACH_TITLES: Record<string, { title: string; content: string }> = {
   first_login: { title: '解锁成就：初来乍到', content: '首次登录' },
@@ -24,9 +25,14 @@ export async function tryUnlockAchievement(conn: mysql.PoolConnection, userId: n
   if (!inserted) return false
 
   const meta = ACH_TITLES[achievementId] || { title: `解锁成就：${achievementId}`, content: '你解锁了一个新的成就，继续保持！' }
+  const rendered = await renderNotificationFromTemplateOrFallback({
+    key: `achievement.${achievementId}`,
+    vars: { achievementId },
+    fallback: meta,
+  })
   await conn.execute(
     `INSERT INTO notifications (user_id, type, title, content) VALUES (?, 'achievement', ?, ?)`,
-    [userId, meta.title, meta.content]
+    [userId, rendered.title, rendered.content]
   )
   return true
 }
