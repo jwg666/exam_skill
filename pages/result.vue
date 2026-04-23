@@ -45,9 +45,6 @@ onMounted(() => {
     correct,
     wrong
   })
-  
-  if (score >= 80) appStore.checkAchievement('acc_80')
-  if (score === 100) appStore.checkAchievement('acc_100')
 })
 
 const formatTime = (seconds: number) => {

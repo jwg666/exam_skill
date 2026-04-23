@@ -4,6 +4,10 @@ import { achievementDefs } from '~/utils/data'
 
 const appStore = useAppStore()
 const router = useRouter()
+
+onMounted(async () => {
+  await appStore.hydrateFromServer()
+})
 </script>
 
 <template>

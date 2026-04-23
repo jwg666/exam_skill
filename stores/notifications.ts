@@ -32,6 +32,19 @@ export const useNotificationStore = defineStore('notifications', () => {
 
   const unreadCount = computed(() => notifications.value.filter(n => !n.readAt).length)
 
+  async function refreshFromServer() {
+    const appStore = useAppStore()
+    if (!appStore.user?.id || !import.meta.client) return
+    try {
+      const res = await $fetch<any>('/api/me/notifications', { query: { userId: appStore.user.id } })
+      if (!res?.ok) return
+      notifications.value = (res.notifications || []) as NotificationItem[]
+      seeded.value = true
+    } catch {
+      // ignore
+    }
+  }
+
   function ensureSeeded() {
     if (seeded.value) return
     seeded.value = true
@@ -78,20 +91,39 @@ export const useNotificationStore = defineStore('notifications', () => {
     notifications.value = notifications.value.slice(0, 50)
   }
 
-  function markRead(id: string) {
+  async function markRead(id: string) {
     const n = notifications.value.find(x => x.id === id)
     if (n && !n.readAt) n.readAt = Date.now()
+
+    const appStore = useAppStore()
+    if (appStore.user?.id && import.meta.client && /^\d+$/.test(id)) {
+      try {
+        await $fetch(`/api/me/notifications/${id}/read`, { method: 'POST', query: { userId: appStore.user.id } })
+      } catch {
+        // ignore
+      }
+    }
   }
 
-  function markAllRead() {
+  async function markAllRead() {
     const now = Date.now()
     notifications.value = notifications.value.map(n => (n.readAt ? n : { ...n, readAt: now }))
+
+    const appStore = useAppStore()
+    if (appStore.user?.id && import.meta.client) {
+      try {
+        await $fetch('/api/me/notifications/read-all', { method: 'POST', query: { userId: appStore.user.id } })
+      } catch {
+        // ignore
+      }
+    }
   }
 
   return {
     notifications,
     unreadCount,
     ensureSeeded,
+    refreshFromServer,
     add,
     markRead,
     markAllRead

@@ -10,7 +10,7 @@ const removeWrong = (qText: string) => {
   appStore.wrongBook = appStore.wrongBook.filter(w => w.q !== qText)
   $toast.success('已移除错题')
   if (appStore.wrongBook.length === 0) {
-    appStore.checkAchievement('wrong_clear')
+    void appStore.checkAchievement('wrong_clear')
   }
 }
 
@@ -18,7 +18,7 @@ const clearAll = () => {
   if (confirm('确定清空错题本吗？')) {
     appStore.wrongBook = []
     $toast.success('错题本已清空')
-    appStore.checkAchievement('wrong_clear')
+    void appStore.checkAchievement('wrong_clear')
   }
 }
 

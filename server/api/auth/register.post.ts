@@ -1,5 +1,8 @@
 import pool from '../../utils/db'
 import { encryptPassword } from '../../utils/passwordCrypto'
+import { ensureExamSkillSchema } from '../../utils/examSchema'
+import { loadGamificationRulesForServer } from '../../utils/gamificationLoader'
+import { buildUserAuthPayload } from '../../utils/userPayload'
 
 export default defineEventHandler(async (event) => {
   const { passwordAesSecret } = useRuntimeConfig()
@@ -22,14 +25,11 @@ export default defineEventHandler(async (event) => {
 
     const insertId = (result as any).insertId
 
-    return {
-      id: insertId,
-      name,
-      phone,
-      totalAnswered: 0,
-      totalCorrect: 0,
-      streak: 0
-    }
+    await ensureExamSkillSchema()
+    const [rows] = await pool.execute('SELECT * FROM users WHERE id = ? LIMIT 1', [insertId])
+    const user = (rows as any[])[0]
+    const { rules } = await loadGamificationRulesForServer()
+    return buildUserAuthPayload(user, rules)
   } catch (err: any) {
     if (err.code === 'ER_DUP_ENTRY') {
       throw createError({ statusCode: 409, message: '该手机号已注册' })

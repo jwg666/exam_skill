@@ -18,24 +18,19 @@ const getGreeting = () => {
   return '夜深了'
 }
 
-const checkIn = () => {
+const checkIn = async () => {
   if (appStore.checkedInToday) return
-  const ok = appStore.checkIn()
+  const ok = await appStore.checkIn()
   if (!ok) return
 
   const { $toast } = useNuxtApp()
   $toast.success(`打卡成功！连续打卡 ${appStore.streak} 天`)
 
-  notificationStore.ensureSeeded()
-  notificationStore.add({
-    type: 'system',
-    title: '打卡成功',
-    content: `你已连续打卡 ${appStore.streak} 天，继续保持！`
-  })
+  await notificationStore.refreshFromServer()
 
-  if (appStore.streak >= 3) appStore.checkAchievement('streak_3')
-  if (appStore.streak >= 7) appStore.checkAchievement('streak_7')
-  if (appStore.streak >= 30) appStore.checkAchievement('streak_30')
+  if (appStore.streak >= 3) await appStore.checkAchievement('streak_3')
+  if (appStore.streak >= 7) await appStore.checkAchievement('streak_7')
+  if (appStore.streak >= 30) await appStore.checkAchievement('streak_30')
 }
 
 const recentBanks = computed(() => {

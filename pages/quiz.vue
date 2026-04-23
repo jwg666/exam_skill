@@ -44,7 +44,7 @@ const toggleFav = () => {
   } else {
     appStore.favorites.push({ ...q.value, bankId: quizStore.bankId, time: Date.now() })
     $toast.success('收藏成功')
-    if (appStore.favorites.length >= 10) appStore.checkAchievement('fav_10')
+    if (appStore.favorites.length >= 10) void appStore.checkAchievement('fav_10')
   }
 }
 
@@ -64,16 +64,9 @@ const submitAnswer = () => {
   }
 
   quizStore.answers[quizStore.currentIdx] = quizStore.selectedOption
-  appStore.totalAnswered++
-  
-  if (appStore.totalAnswered === 1) appStore.checkAchievement('first_quiz')
-  if (appStore.totalAnswered === 50) appStore.checkAchievement('quiz_50')
-  if (appStore.totalAnswered === 200) appStore.checkAchievement('quiz_200')
-  if (appStore.totalAnswered === 500) appStore.checkAchievement('quiz_500')
 
   const isCorrect = quizStore.selectedOption === q.value.ans
   if (isCorrect) {
-    appStore.totalCorrect++
     if (quizStore.mode === 'practice') {
       if (quizStore.progressEnabled) {
         const p = appStore.bankProgress[quizStore.bankId!] || 0
@@ -143,8 +136,16 @@ const finishQuiz = async () => {
   
   const accuracy = Math.round((correct / total) * 100)
 
+  const ymd = () => {
+    const d = new Date()
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
   try {
-    await $fetch('/api/quiz/submit', {
+    const res = await $fetch<any>('/api/quiz/submit', {
       method: 'POST',
       body: {
         userId: appStore.user?.id,
@@ -154,9 +155,18 @@ const finishQuiz = async () => {
         timeSpent: quizStore.elapsed,
         accuracy,
         wrongQuestions,
-        dateStr: new Date().toLocaleDateString()
-      }
+        dateStr: ymd(),
+      },
     })
+    if (res?.user) {
+      appStore.syncUserData(res.user)
+    }
+    if (Array.isArray(res?.unlockedAchievements) && res.unlockedAchievements.length) {
+      for (const id of res.unlockedAchievements) {
+        // 服务器已落库；同步本地集合，避免重复弹窗
+        if (!appStore.achievements.includes(id)) appStore.achievements.push(id)
+      }
+    }
   } catch(e) {
     console.error('Submit to server failed', e)
   }
@@ -167,7 +177,7 @@ const finishQuiz = async () => {
     const removed = Math.max(0, before - appStore.wrongBook.length)
     if (removed > 0) $toast.success(`已掌握并移除 ${removed} 题`)
     if (appStore.wrongBook.length === 0) {
-      appStore.checkAchievement('wrong_clear')
+      void appStore.checkAchievement('wrong_clear')
     }
   }
 
@@ -181,9 +191,6 @@ const finishQuiz = async () => {
       accuracy
     })
   }
-
-  if (accuracy >= 80) appStore.checkAchievement('acc_80')
-  if (accuracy === 100) appStore.checkAchievement('acc_100')
 
   router.push('/result')
 }

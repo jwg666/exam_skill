@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAppStore } from '~/stores/app'
+import { useNotificationStore } from '~/stores/notifications'
 
 definePageMeta({
   layout: false
@@ -11,6 +12,7 @@ const password = ref('')
 const name = ref('')
 const isPasswordVisible = ref(false)
 const appStore = useAppStore()
+const notificationStore = useNotificationStore()
 const router = useRouter()
 const { $toast } = useNuxtApp()
 
@@ -32,8 +34,10 @@ const handleLogin = async () => {
     }
 
     appStore.syncUserData(data.value)
+    await appStore.hydrateFromServer()
+    await notificationStore.refreshFromServer()
+    await appStore.checkAchievement('first_login')
     $toast.success('登录成功')
-    appStore.checkAchievement('first_login')
     
     setTimeout(() => {
       router.push('/')
@@ -66,8 +70,10 @@ const handleRegister = async () => {
     }
 
     appStore.syncUserData(data.value)
+    await appStore.hydrateFromServer()
+    await notificationStore.refreshFromServer()
+    await appStore.checkAchievement('first_login')
     $toast.success('注册成功')
-    appStore.checkAchievement('first_login')
     
     setTimeout(() => {
       router.push('/')

@@ -14,6 +14,8 @@ async function initDB() {
     \`total_answered\` INT DEFAULT 0,
     \`total_correct\` INT DEFAULT 0,
     \`streak\` INT DEFAULT 0,
+    \`exp\` INT NOT NULL DEFAULT 0,
+    \`theme\` VARCHAR(10) NOT NULL DEFAULT 'dark',
     \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -101,6 +103,19 @@ async function initDB() {
     \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (\`user_id\`) REFERENCES \`users\`(\`id\`) ON DELETE CASCADE,
     UNIQUE KEY \`uniq_user_achieve\` (\`user_id\`, \`achievement_id\`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  CREATE TABLE IF NOT EXISTS \`notifications\` (
+    \`id\` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    \`user_id\` INT NOT NULL,
+    \`type\` VARCHAR(20) NOT NULL,
+    \`title\` VARCHAR(120) NOT NULL,
+    \`content\` TEXT NOT NULL,
+    \`read_at\` TIMESTAMP NULL DEFAULT NULL,
+    \`created_at\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY \`idx_notifications_user_created\` (\`user_id\`, \`created_at\`),
+    KEY \`idx_notifications_user_read\` (\`user_id\`, \`read_at\`),
+    FOREIGN KEY (\`user_id\`) REFERENCES \`users\`(\`id\`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `;
 

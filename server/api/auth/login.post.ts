@@ -1,5 +1,8 @@
 import pool from '../../utils/db'
 import { encryptPassword, verifyPassword } from '../../utils/passwordCrypto'
+import { ensureExamSkillSchema } from '../../utils/examSchema'
+import { loadGamificationRulesForServer } from '../../utils/gamificationLoader'
+import { buildUserAuthPayload } from '../../utils/userPayload'
 
 export default defineEventHandler(async (event) => {
   const { passwordAesSecret } = useRuntimeConfig()
@@ -38,12 +41,9 @@ export default defineEventHandler(async (event) => {
     await pool.execute('UPDATE users SET password = ? WHERE id = ?', [encryptPassword(password, passwordAesSecret), user.id])
   }
 
-  return {
-    id: user.id,
-    phone: user.phone,
-    name: user.name,
-    totalAnswered: user.total_answered,
-    totalCorrect: user.total_correct,
-    streak: user.streak
-  }
+  await ensureExamSkillSchema()
+  const [freshRows] = await pool.execute('SELECT * FROM users WHERE id = ? LIMIT 1', [user.id])
+  const fresh = (freshRows as any[])[0] || user
+  const { rules } = await loadGamificationRulesForServer()
+  return buildUserAuthPayload(fresh, rules)
 })

@@ -39,5 +39,6 @@ function getPool() {
 export default {
   execute: (...args: Parameters<Pool['execute']>) => getPool().execute(...args),
   query: (...args: Parameters<Pool['query']>) => getPool().query(...args),
+  getConnection: (...args: Parameters<Pool['getConnection']>) => getPool().getConnection(...args),
   end: (...args: Parameters<Pool['end']>) => getPool().end(...args)
-} as Pick<Pool, 'execute' | 'query' | 'end'>
+} as Pick<Pool, 'execute' | 'query' | 'getConnection' | 'end'>

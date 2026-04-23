@@ -6,18 +6,19 @@ import { storeToRefs } from 'pinia'
 const notificationStore = useNotificationStore()
 const { notifications } = storeToRefs(notificationStore)
 
-onMounted(() => {
+onMounted(async () => {
+  await notificationStore.refreshFromServer()
   notificationStore.ensureSeeded()
 })
 
-const markAllRead = () => {
-  notificationStore.markAllRead()
+const markAllRead = async () => {
+  await notificationStore.markAllRead()
   const { $toast } = useNuxtApp()
   $toast?.success('已全部标为已读')
 }
 
-const openItem = (id: string) => {
-  notificationStore.markRead(id)
+const openItem = async (id: string) => {
+  await notificationStore.markRead(id)
 }
 </script>
 
