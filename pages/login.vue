@@ -7,26 +7,34 @@ definePageMeta({
 })
 
 const isLoginMode = ref(true)
+const loginMethod = ref<'password' | 'sms'>('password')
 const phone = ref('')
 const password = ref('')
+const code = ref('')
 const name = ref('')
 const isPasswordVisible = ref(false)
+const sending = ref(false)
+const cooldown = ref(0)
+let cooldownTimer: any = null
 const appStore = useAppStore()
 const notificationStore = useNotificationStore()
 const router = useRouter()
 const { $toast } = useNuxtApp()
 
 const handleLogin = async () => {
-  if (!phone.value || !password.value) {
-    $toast.error('请输入手机号和密码')
+  if (!phone.value) {
+    $toast.error('请输入手机号')
     return
   }
   
   try {
-    const { data, error } = await useFetch('/api/auth/login', {
-      method: 'POST',
-      body: { phone: phone.value, password: password.value }
-    })
+    const api = loginMethod.value === 'sms' ? '/api/auth/login-code' : '/api/auth/login'
+    const body =
+      loginMethod.value === 'sms'
+        ? { phone: phone.value, code: code.value }
+        : { phone: phone.value, password: password.value }
+
+    const { data, error } = await useFetch(api, { method: 'POST', body })
 
     if (error.value) {
       $toast.error(error.value.data?.message || '登录失败')
@@ -44,6 +52,35 @@ const handleLogin = async () => {
     }, 1000)
   } catch (e) {
     $toast.error('网络错误')
+  }
+}
+
+const sendCode = async () => {
+  if (!phone.value) {
+    $toast.error('请输入手机号')
+    return
+  }
+  if (cooldown.value > 0 || sending.value) return
+  sending.value = true
+  try {
+    const res = await $fetch<any>('/api/auth/sms/send', { method: 'POST', body: { phone: phone.value } })
+    if (res?.code) {
+      // debugReturnCode=1 时便于联调
+      $toast.info(`验证码：${res.code}`)
+      code.value = res.code
+    } else {
+      $toast.success('验证码已发送')
+    }
+    cooldown.value = 60
+    clearInterval(cooldownTimer)
+    cooldownTimer = setInterval(() => {
+      cooldown.value--
+      if (cooldown.value <= 0) clearInterval(cooldownTimer)
+    }, 1000)
+  } catch (e: any) {
+    $toast.error(e?.data?.message || e?.message || '发送失败')
+  } finally {
+    sending.value = false
   }
 }
 
@@ -87,6 +124,7 @@ const toggleMode = () => {
   isLoginMode.value = !isLoginMode.value
   phone.value = ''
   password.value = ''
+  code.value = ''
   name.value = ''
 }
 
@@ -94,6 +132,10 @@ onMounted(() => {
   if (appStore.user) {
     router.push('/')
   }
+})
+
+onUnmounted(() => {
+  clearInterval(cooldownTimer)
 })
 </script>
 
@@ -120,6 +162,23 @@ onMounted(() => {
 
       <div class="g-card p-6 md:p-8 backdrop-blur-xl bg-[#162032]/80">
         <div class="space-y-5" v-if="isLoginMode">
+          <div class="flex gap-2 text-xs font-bold mb-1">
+            <button
+              class="flex-1 py-2 rounded-xl border"
+              :class="loginMethod === 'password' ? 'bg-teal-500/20 border-teal-500/30 text-teal-300' : 'bg-[#0B1120]/40 border-[#243049] text-[#94A3B8]'"
+              @click="loginMethod = 'password'"
+            >
+              密码登录
+            </button>
+            <button
+              class="flex-1 py-2 rounded-xl border"
+              :class="loginMethod === 'sms' ? 'bg-teal-500/20 border-teal-500/30 text-teal-300' : 'bg-[#0B1120]/40 border-[#243049] text-[#94A3B8]'"
+              @click="loginMethod = 'sms'"
+            >
+              验证码登录
+            </button>
+          </div>
+
           <div class="relative group">
             <i class="fas fa-mobile-alt absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B] transition-colors duration-300 group-focus-within:text-teal-500"></i>
             <input 
@@ -131,7 +190,7 @@ onMounted(() => {
             >
           </div>
           
-          <div class="relative group">
+          <div v-if="loginMethod === 'password'" class="relative group">
             <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B] transition-colors duration-300 group-focus-within:text-teal-500"></i>
             <input 
               v-model="password" 
@@ -145,6 +204,26 @@ onMounted(() => {
               @click="isPasswordVisible = !isPasswordVisible"
             >
               <i class="fas" :class="isPasswordVisible ? 'fa-eye' : 'fa-eye-slash'"></i>
+            </button>
+          </div>
+
+          <div v-else class="relative group">
+            <i class="fas fa-shield-halved absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B] transition-colors duration-300 group-focus-within:text-teal-500"></i>
+            <input 
+              v-model="code" 
+              type="text" 
+              inputmode="numeric"
+              maxlength="6"
+              placeholder="请输入验证码" 
+              class="g-input pl-11 pr-28 bg-[#0B1120]/50"
+              @keyup.enter="handleLogin"
+            >
+            <button
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold px-3 py-2 rounded-lg border"
+              :class="cooldown > 0 || sending ? 'bg-[#0B1120]/40 border-[#243049] text-[#64748B] cursor-not-allowed' : 'bg-teal-500/20 border-teal-500/30 text-teal-300 hover:bg-teal-500/30'"
+              @click="sendCode"
+            >
+              {{ cooldown > 0 ? `${cooldown}s` : '发送验证码' }}
             </button>
           </div>
 

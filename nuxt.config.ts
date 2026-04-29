@@ -4,6 +4,17 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   runtimeConfig: {
     passwordAesSecret: process.env.NUXT_PASSWORD_AES_SECRET || '',
+    sms: {
+      aliyun: {
+        accessKeyId: process.env.NUXT_ALIYUN_ACCESS_KEY_ID || '',
+        accessKeySecret: process.env.NUXT_ALIYUN_ACCESS_KEY_SECRET || '',
+        signName: process.env.NUXT_ALIYUN_SMS_SIGN_NAME || '',
+        templateCode: process.env.NUXT_ALIYUN_SMS_TEMPLATE_CODE || '',
+        endpoint: process.env.NUXT_ALIYUN_SMS_ENDPOINT || 'https://dysmsapi.aliyuncs.com',
+        regionId: process.env.NUXT_ALIYUN_SMS_REGION_ID || 'cn-hangzhou',
+      },
+      debugReturnCode: process.env.NUXT_SMS_DEBUG_RETURN_CODE === '1',
+    },
     // 与 admin-center 对齐：用于读取已发布的 rules/configs（config_items / rule_sets）
     mysql: {
       host: process.env.NUXT_MYSQL_HOST || '',

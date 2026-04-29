@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@alicloud/pop-core": "^1.8.0",
     "@fontsource/noto-sans-sc": "^5.2.9",
     "mysql2": "^3.22.0",
     "nuxt": "^3.21.2",
