@@ -6,6 +6,7 @@ const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
 const quizStore = useQuizStore()
+const { $toast, $api } = useNuxtApp()
 
 const bankId = route.params.id as string
 const { data: bank } = await useFetch<any>(`/api/banks/${bankId}`)
@@ -14,19 +15,62 @@ if (!bank.value) {
   router.replace('/bank')
 }
 
-const progress = computed(() => appStore.bankProgress[bankId] || 0)
-const percentage = computed(() => bank.value ? Math.round((progress.value / bank.value.total) * 100) : 0)
+const loadingRandom = ref(false)
+const loadingWrong = ref(false)
 
-const startQuizRoute = (mode: 'practice'|'exam', startIndex = progress.value) => {
-  if (!bank.value) return
+const startQuiz = (mode: 'practice' | 'exam', questions: any[], startIndex = 0, name?: string) => {
+  if (!questions.length) return
   quizStore.resetQuiz()
   quizStore.bankId = bankId
+  quizStore.bankName = name || bank.value?.name || ''
   quizStore.mode = mode
-  quizStore.questions = bank.value.questions
+  quizStore.questions = questions
   quizStore.currentIdx = startIndex
   quizStore.startTime = Date.now()
   router.push('/quiz')
 }
+
+const startPractice = () => {
+  startQuiz('practice', bank.value?.questions || [], Math.min(appStore.bankProgress[bankId] || 0, (bank.value?.questions.length || 1) - 1))
+}
+
+const startRandom = async () => {
+  if (loadingRandom.value) return
+  loadingRandom.value = true
+  try {
+    const res = await $api<any>(`/api/banks/${bankId}/random?n=10`)
+    if (!res.questions?.length) {
+      $toast.info('该题库暂无题目')
+      return
+    }
+    startQuiz('exam', res.questions, 0, `${bank.value?.name || ''} · 随机${res.questions.length}题`)
+  } catch (e) {
+    $toast.error('抽题失败')
+  } finally {
+    loadingRandom.value = false
+  }
+}
+
+const startWrong = async () => {
+  if (loadingWrong.value) return
+  loadingWrong.value = true
+  try {
+    const wrongs = await $api<any[]>(`/api/wrong-book?bankId=${bankId}`)
+    if (!wrongs.length) {
+      $toast.info('该题库暂无错题')
+      return
+    }
+    const questions = wrongs.map(w => ({ id: w.questionId, type: w.type, q: w.question, opts: w.opts, ans: w.ans, exp: w.exp }))
+    startQuiz('exam', questions, 0, `${bank.value?.name || ''} · 错题重练`)
+  } catch (e) {
+    $toast.error('获取错题失败')
+  } finally {
+    loadingWrong.value = false
+  }
+}
+
+const progress = computed(() => appStore.bankProgress[bankId] || 0)
+const percentage = computed(() => bank.value && bank.value.total ? Math.min(100, Math.round((progress.value / bank.value.total) * 100)) : 0)
 
 const isDone = (i: number) => i < progress.value
 </script>
@@ -68,12 +112,15 @@ const isDone = (i: number) => i < progress.value
       </div>
 
       <!-- 操作按钮 -->
-      <div class="flex gap-4 mt-6 fade-up" style="animation-delay:0.1s">
-        <button class="g-btn g-btn-primary flex-1 shadow-[0_8px_25px_rgba(13,148,136,0.4)]" @click="startQuizRoute('practice')">
+      <div class="grid grid-cols-3 gap-3 mt-6 fade-up" style="animation-delay:0.1s">
+        <button class="g-btn g-btn-primary shadow-[0_8px_25px_rgba(13,148,136,0.4)]" @click="startPractice">
           <i class="fas fa-play text-sm"></i> 继续练习
         </button>
-        <button class="g-btn g-btn-ghost flex-1 border-[#243049] bg-[#162032] hover:bg-[#1C2942] hover:text-white" @click="startQuizRoute('exam', 0)">
-          <i class="fas fa-file-alt text-sm"></i> 模拟考试
+        <button class="g-btn g-btn-ghost border-[#243049] bg-[#162032] hover:bg-[#1C2942] hover:text-white" :disabled="loadingRandom" @click="startRandom">
+          <i class="fas fa-random text-sm"></i> {{ loadingRandom ? '抽题中…' : '随机10题' }}
+        </button>
+        <button class="g-btn g-btn-ghost border-[#243049] bg-[#162032] hover:bg-[#1C2942] hover:text-white" :disabled="loadingWrong" @click="startWrong">
+          <i class="fas fa-book-dead text-sm"></i> {{ loadingWrong ? '加载中…' : '错题重练' }}
         </button>
       </div>
 

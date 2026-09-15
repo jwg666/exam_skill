@@ -41,7 +41,7 @@ const diffColorClass = computed(() => {
           <h3 class="text-base font-bold truncate">{{ bank.name }}</h3>
           <span v-if="isCompleted" class="text-teal-500 text-sm"><i class="fas fa-check-circle"></i></span>
         </div>
-        <p class="text-xs text-[#94A3B8] mb-2 truncate">{{ bank.desc }}</p>
+        <p class="text-xs text-[#94A3B8] mb-2 truncate">{{ bank.description || bank.desc }}</p>
         <div class="flex items-center gap-2 flex-wrap mb-3">
           <span class="g-tag" :class="`type-${bank.type}`">{{ bank.typeName }}</span>
           <span class="g-tag bg-[#1C2942] text-[#94A3B8]">

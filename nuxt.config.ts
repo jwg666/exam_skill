@@ -2,6 +2,15 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  runtimeConfig: {
+    // 显式从环境变量取值（兼容 dev 的 .env 与生产的环境注入）；变量名保持 DATABASE_* / AUTH_SECRET
+    databaseHost: process.env.DATABASE_HOST || '127.0.0.1',
+    databasePort: process.env.DATABASE_PORT || '3306',
+    databaseUser: process.env.DATABASE_USER || 'root',
+    databasePassword: process.env.DATABASE_PASSWORD || '',
+    databaseName: process.env.DATABASE_NAME || 'exam_skill',
+    authSecret: process.env.AUTH_SECRET || 'dev-secret-change-me'
+  },
   modules: [
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt',

@@ -7,15 +7,18 @@ definePageMeta({ layout: false })
 const appStore = useAppStore()
 const quizStore = useQuizStore()
 const router = useRouter()
-const { $toast } = useNuxtApp()
+const { $toast, $api } = useNuxtApp()
 
 if (!quizStore.bankId || quizStore.questions.length === 0) {
   router.replace('/bank')
 }
 
 const q = computed(() => quizStore.questions[quizStore.currentIdx])
-const isFav = computed(() => appStore.favorites.some(f => f.q === q.value?.q))
-const isFlagged = computed(() => quizStore.flags[quizStore.currentIdx] || false)
+const qType = computed(() => q.value?.type || 'single')
+const typeLabel = computed(() => ({ single: '单选', judge: '判断', multi: '多选' })[qType.value] || '单选')
+const isFav = computed(() => appStore.favorites.some(f => f.questionId === q.value?.id))
+const isFlagged = computed(() => !!quizStore.flags[quizStore.currentIdx])
+const isMulti = computed(() => qType.value === 'multi')
 
 const timerInterval = ref<any>(null)
 const currentTime = ref(0)
@@ -35,15 +38,41 @@ const formatTime = (seconds: number) => {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-const toggleFav = () => {
+const optionState = (i: number) => {
+  const answered = quizStore.answered
+  const practice = quizStore.mode === 'practice'
+  if (isMulti.value) {
+    const picked: number[] = Array.isArray(quizStore.answers[quizStore.currentIdx]) ? quizStore.answers[quizStore.currentIdx] : []
+    const right: number[] = Array.isArray(q.value.ans) ? q.value.ans : []
+    if (answered && practice) {
+      if (right.includes(i)) return picked.includes(i) ? 'correct' : 'correct'
+      if (picked.includes(i)) return 'wrong'
+      return ''
+    }
+    return picked.includes(i) ? 'selected' : ''
+  }
+  if (answered && practice) {
+    if (i === q.value.ans) return 'correct'
+    if (quizStore.selected[0] === i) return 'wrong'
+    return ''
+  }
+  return quizStore.selected[0] === i && (!answered || quizStore.mode === 'exam') ? 'selected' : ''
+}
+
+const toggleFav = async () => {
   if (!q.value) return
-  if (isFav.value) {
-    appStore.favorites = appStore.favorites.filter(f => f.q !== q.value.q)
-    $toast.info('已取消收藏')
-  } else {
-    appStore.favorites.push({ ...q.value, bankId: quizStore.bankId, time: Date.now() })
-    $toast.success('收藏成功')
-    if (appStore.favorites.length >= 10) appStore.checkAchievement('fav_10')
+  try {
+    const res = await $api<any>('/api/favorites', { method: 'POST', body: { questionId: q.value.id } })
+    if (res.favorited) {
+      appStore.favorites.push({ questionId: q.value.id, bankId: quizStore.bankId, question: q.value.q, opts: q.value.opts, ans: q.value.ans, type: qType.value, exp: q.value.exp })
+      $toast.success('收藏成功')
+    } else {
+      appStore.favorites = appStore.favorites.filter(f => f.questionId !== q.value.id)
+      $toast.info('已取消收藏')
+    }
+    appStore.toastAchievements(res.newlyUnlocked || [])
+  } catch {
+    $toast.error('操作失败')
   }
 }
 
@@ -53,58 +82,54 @@ const toggleFlag = () => {
 
 const selectOption = (idx: number) => {
   if (quizStore.answered && quizStore.mode === 'practice') return
-  quizStore.selectedOption = idx
+  if (isMulti.value) {
+    const arr = [...quizStore.selected]
+    const pos = arr.indexOf(idx)
+    if (pos > -1) arr.splice(pos, 1)
+    else arr.push(idx)
+    quizStore.selected = arr
+  } else {
+    quizStore.selected = [idx]
+    // 单选/判断在考试模式下选择即提交
+    if (quizStore.mode === 'exam') {
+      submitAnswer()
+    }
+  }
 }
 
 const submitAnswer = () => {
-  if (quizStore.selectedOption === -1) {
+  if (!isMulti.value && quizStore.selected.length !== 1) {
     $toast.warning('请先选择一个选项')
     return
   }
-
-  quizStore.answers[quizStore.currentIdx] = quizStore.selectedOption
-  appStore.totalAnswered++
-  
-  if (appStore.totalAnswered === 1) appStore.checkAchievement('first_quiz')
-  if (appStore.totalAnswered === 50) appStore.checkAchievement('quiz_50')
-  if (appStore.totalAnswered === 200) appStore.checkAchievement('quiz_200')
-  if (appStore.totalAnswered === 500) appStore.checkAchievement('quiz_500')
-
-  const isCorrect = quizStore.selectedOption === q.value.ans
-  if (isCorrect) {
-    appStore.totalCorrect++
-    if (quizStore.mode === 'practice') {
-      const p = appStore.bankProgress[quizStore.bankId!] || 0
-      if (quizStore.currentIdx >= p) {
-        appStore.bankProgress[quizStore.bankId!] = quizStore.currentIdx + 1
-      }
-    }
-  } else {
-    const existing = appStore.wrongBook.find(w => w.q === q.value.q)
-    if (existing) {
-      existing.errCount = (existing.errCount || 1) + 1
-      existing.time = Date.now()
-    } else {
-      appStore.wrongBook.push({
-        ...q.value,
-        bankId: quizStore.bankId,
-        time: Date.now(),
-        errCount: 1
-      })
-    }
+  if (isMulti.value && quizStore.selected.length === 0) {
+    $toast.warning('请先选择选项（多选）')
+    return
   }
 
+  const cur = quizStore.currentIdx
+  quizStore.answers[cur] = isMulti.value ? [...quizStore.selected].sort((a, b) => a - b) : quizStore.selected[0]
   quizStore.answered = true
   if (quizStore.mode === 'exam') {
     nextQuestion()
   }
 }
 
+const restoreAnswerAt = (i: number) => {
+  const a = quizStore.answers[i]
+  if (a === undefined) {
+    quizStore.selected = []
+    quizStore.answered = false
+  } else {
+    quizStore.selected = isMulti.value && Array.isArray(a) ? [...a] : [a as number]
+    quizStore.answered = true
+  }
+}
+
 const nextQuestion = () => {
   if (quizStore.currentIdx < quizStore.questions.length - 1) {
     quizStore.currentIdx++
-    quizStore.selectedOption = quizStore.answers[quizStore.currentIdx] !== undefined ? quizStore.answers[quizStore.currentIdx] : -1
-    quizStore.answered = quizStore.answers[quizStore.currentIdx] !== undefined
+    restoreAnswerAt(quizStore.currentIdx)
   } else {
     finishQuiz()
   }
@@ -113,59 +138,60 @@ const nextQuestion = () => {
 const prevQuestion = () => {
   if (quizStore.currentIdx > 0) {
     quizStore.currentIdx--
-    quizStore.selectedOption = quizStore.answers[quizStore.currentIdx] !== undefined ? quizStore.answers[quizStore.currentIdx] : -1
-    quizStore.answered = quizStore.answers[quizStore.currentIdx] !== undefined
+    restoreAnswerAt(quizStore.currentIdx)
   }
 }
 
 const finishQuiz = async () => {
+  const total = quizStore.questions.length
+  const unanswered = quizStore.questions.filter((_, i) => !quizStore.isAnsweredAt(i)).length
+  if (unanswered > 0 && !confirm(`还有 ${unanswered} 题未作答，确定交卷吗？`)) return
+
   quizStore.elapsed = Math.floor((Date.now() - quizStore.startTime) / 1000)
 
-  const total = quizStore.questions.length
   let correct = 0
-  const wrongQuestions = []
-  
+  const wrongQuestions: number[] = []
   for (let i = 0; i < total; i++) {
-    if (quizStore.answers[i] === quizStore.questions[i].ans) {
+    if (quizStore.isCorrectAt(i)) {
       correct++
     } else {
       wrongQuestions.push(quizStore.questions[i].id)
     }
   }
-  
-  const accuracy = Math.round((correct / total) * 100)
+  const score = Math.round((correct / total) * 100) || 0
+
+  quizStore.result = {
+    bankId: quizStore.bankId,
+    bankName: quizStore.bankName,
+    mode: quizStore.mode,
+    total,
+    correct,
+    wrong: total - correct,
+    score,
+    elapsed: quizStore.elapsed
+  }
 
   try {
-    await $fetch('/api/quiz/submit', {
+    const res = await $api<any>('/api/quiz/submit', {
       method: 'POST',
       body: {
-        userId: appStore.user?.id,
         bankId: quizStore.bankId,
         total,
         correct,
         timeSpent: quizStore.elapsed,
-        accuracy,
-        wrongQuestions,
-        dateStr: new Date().toLocaleDateString()
+        wrongQuestions
       }
     })
-  } catch(e) {
+    appStore.toastAchievements(res.newlyUnlocked || [])
+    // 本地总量即时更新（下次登录以服务端为准）
+    if (appStore.user) {
+      appStore.user.totalAnswered = (appStore.user.totalAnswered || 0) + total
+      appStore.user.totalCorrect = (appStore.user.totalCorrect || 0) + correct
+    }
+  } catch (e) {
     console.error('Submit to server failed', e)
+    $toast.error('成绩上传失败，已本地记录')
   }
-
-  if (appStore.history) {
-    appStore.history.push({
-      bankId: quizStore.bankId,
-      date: new Date().toLocaleDateString(),
-      total,
-      correct,
-      time: quizStore.elapsed,
-      accuracy
-    })
-  }
-
-  if (accuracy >= 80) appStore.checkAchievement('acc_80')
-  if (accuracy === 100) appStore.checkAchievement('acc_100')
 
   router.push('/result')
 }
@@ -173,8 +199,7 @@ const finishQuiz = async () => {
 const showSheet = ref(false)
 const jumpTo = (i: number) => {
   quizStore.currentIdx = i
-  quizStore.selectedOption = quizStore.answers[i] !== undefined ? quizStore.answers[i] : -1
-  quizStore.answered = quizStore.answers[i] !== undefined
+  restoreAnswerAt(i)
   showSheet.value = false
 }
 </script>
@@ -217,42 +242,40 @@ const jumpTo = (i: number) => {
     <div class="flex-1 overflow-y-auto px-5 py-6 pb-32 z-10 relative">
       <div class="mb-8 fade-up">
         <div class="flex items-start gap-3 mb-4">
-          <span class="g-tag bg-gradient-to-r from-teal-500 to-teal-400 text-white shadow-[0_2px_10px_rgba(13,148,136,0.3)] text-xs py-1 px-2.5">单选</span>
+          <span class="g-tag bg-gradient-to-r text-white text-xs py-1 px-2.5 shrink-0"
+            :class="isMulti ? 'from-purple-500 to-purple-400' : qType === 'judge' ? 'from-blue-500 to-blue-400' : 'from-teal-500 to-teal-400'">{{ typeLabel }}</span>
           <h2 class="text-lg font-bold leading-relaxed text-justify">{{ q.q }}</h2>
         </div>
+        <p v-if="isMulti" class="text-xs text-purple-400/80 -mt-2 ml-[52px]">多选题：选出所有正确选项</p>
       </div>
 
       <div class="space-y-3 fade-up" style="animation-delay:0.1s">
-        <div 
+        <div
           v-for="(opt, i) in q.opts" :key="i"
           class="quiz-option group"
-          :class="{
-            'selected': quizStore.selectedOption === i && (!quizStore.answered || quizStore.mode === 'exam'),
-            'correct': quizStore.answered && quizStore.mode === 'practice' && i === q.ans,
-            'wrong': quizStore.answered && quizStore.mode === 'practice' && quizStore.selectedOption === i && i !== q.ans
-          }"
+          :class="optionState(i)"
           @click="selectOption(i)"
         >
           <div class="opt-label group-hover:bg-[#243049] transition-colors shadow-sm">{{ String.fromCharCode(65 + i) }}</div>
           <span class="flex-1 text-[15px] font-medium leading-relaxed">{{ opt }}</span>
-          <i v-if="quizStore.answered && quizStore.mode === 'practice' && i === q.ans" class="fas fa-check-circle text-white text-lg"></i>
-          <i v-if="quizStore.answered && quizStore.mode === 'practice' && quizStore.selectedOption === i && i !== q.ans" class="fas fa-times-circle text-white text-lg"></i>
+          <i v-if="quizStore.answered && quizStore.mode === 'practice' && ((isMulti && Array.isArray(q.ans) && q.ans.includes(i)) || (!isMulti && i === q.ans))" class="fas fa-check-circle text-white text-lg"></i>
+          <i v-if="quizStore.answered && quizStore.mode === 'practice' && !isMulti && quizStore.selected[0] === i && i !== q.ans" class="fas fa-times-circle text-white text-lg"></i>
         </div>
       </div>
 
       <!-- 解析 -->
       <div v-if="quizStore.answered && quizStore.mode === 'practice'" class="mt-8 p-5 bg-gradient-to-br from-[#1C2942] to-[#162032] border border-[#243049] rounded-2xl fade-up relative overflow-hidden shadow-lg">
-        <div class="absolute top-0 left-0 w-1 h-full" :class="quizStore.selectedOption === q.ans ? 'bg-green-500' : 'bg-red-500'"></div>
+        <div class="absolute top-0 left-0 w-1 h-full" :class="quizStore.isCorrectAt(quizStore.currentIdx) ? 'bg-green-500' : 'bg-red-500'"></div>
         <div class="flex items-center justify-between mb-3">
           <h3 class="font-bold flex items-center gap-2">
             <i class="fas fa-lightbulb text-amber-400"></i> 答案解析
           </h3>
-          <span class="text-sm font-bold" :class="quizStore.selectedOption === q.ans ? 'text-green-500' : 'text-red-500'">
-            {{ quizStore.selectedOption === q.ans ? '回答正确' : '回答错误' }}
+          <span class="text-sm font-bold" :class="quizStore.isCorrectAt(quizStore.currentIdx) ? 'text-green-500' : 'text-red-500'">
+            {{ quizStore.isCorrectAt(quizStore.currentIdx) ? '回答正确' : '回答错误' }}
           </span>
         </div>
         <p class="text-sm text-[#94A3B8] leading-relaxed text-justify">
-          正确答案：<span class="text-white font-bold">{{ String.fromCharCode(65 + q.ans) }}</span>。{{ q.exp }}
+          正确答案：<span class="text-white font-bold">{{ isMulti ? (q.ans || []).map((a: number) => String.fromCharCode(65 + a)).join('、') : String.fromCharCode(65 + q.ans) }}</span>。{{ q.exp }}
         </p>
       </div>
     </div>
@@ -267,15 +290,15 @@ const jumpTo = (i: number) => {
           <i class="fas fa-flag" :class="isFlagged ? 'text-orange-400' : ''"></i>
         </button>
       </div>
-      
-      <button v-if="!quizStore.answered" class="g-btn g-btn-primary flex-1 shadow-[0_8px_25px_rgba(13,148,136,0.4)] text-[15px] font-bold" @click="submitAnswer">
-        提交答案 <i class="fas fa-paper-plane text-sm ml-1"></i>
+
+      <button v-if="!quizStore.answered || isMulti" class="g-btn g-btn-primary flex-1 shadow-[0_8px_25px_rgba(13,148,136,0.4)] text-[15px] font-bold" :class="{ 'opacity-50 pointer-events-none': quizStore.answered && quizStore.mode === 'practice' && isMulti }" @click="submitAnswer">
+        {{ quizStore.answered && isMulti ? '已提交' : isMulti ? '确认答案' : '提交答案' }} <i class="fas fa-paper-plane text-sm ml-1"></i>
       </button>
-      <div v-else class="flex flex-1 gap-2">
+      <div v-if="quizStore.answered" class="flex flex-1 gap-2">
         <button class="g-btn g-btn-ghost flex-1 bg-[#162032] hover:bg-[#1C2942] hover:text-white border-[#243049]" @click="prevQuestion" :disabled="quizStore.currentIdx === 0" :class="{ 'opacity-50 cursor-not-allowed': quizStore.currentIdx === 0 }">
           <i class="fas fa-arrow-left text-sm mr-1"></i> 上一题
         </button>
-        <button class="g-btn g-btn-primary flex-1 shadow-[0_8px_25px_rgba(13,148,136,0.4)]" @click="nextQuestion">
+        <button v-if="!isMulti || quizStore.mode === 'practice'" class="g-btn g-btn-primary flex-1 shadow-[0_8px_25px_rgba(13,148,136,0.4)]" @click="nextQuestion">
           {{ quizStore.currentIdx === quizStore.questions.length - 1 ? '完成' : '下一题' }} <i class="fas" :class="quizStore.currentIdx === quizStore.questions.length - 1 ? 'fa-check' : 'fa-arrow-right'"></i>
         </button>
       </div>
@@ -294,15 +317,15 @@ const jumpTo = (i: number) => {
           </div>
         </div>
         <div class="grid grid-cols-6 gap-3">
-          <div 
-            v-for="(q, i) in quizStore.questions" :key="i"
+          <div
+            v-for="(qq, i) in quizStore.questions" :key="i"
             class="answer-grid-item"
             :class="{
               'current': quizStore.currentIdx === i,
-              'answered': quizStore.answers[i] !== undefined && !quizStore.flags[i] && (quizStore.mode === 'exam' || quizStore.currentIdx === i),
+              'answered': quizStore.isAnsweredAt(i) && !quizStore.flags[i] && (quizStore.mode === 'exam' || quizStore.currentIdx === i),
               'flagged': quizStore.flags[i],
-              'correct-small': quizStore.mode === 'practice' && quizStore.answers[i] !== undefined && quizStore.answers[i] === quizStore.questions[i].ans && quizStore.currentIdx !== i,
-              'wrong-small': quizStore.mode === 'practice' && quizStore.answers[i] !== undefined && quizStore.answers[i] !== quizStore.questions[i].ans && quizStore.currentIdx !== i
+              'correct-small': quizStore.mode === 'practice' && quizStore.isAnsweredAt(i) && quizStore.isCorrectAt(i) && quizStore.currentIdx !== i,
+              'wrong-small': quizStore.mode === 'practice' && quizStore.isAnsweredAt(i) && !quizStore.isCorrectAt(i) && quizStore.currentIdx !== i
             }"
             @click="jumpTo(i)"
           >

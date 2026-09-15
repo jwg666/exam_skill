@@ -1,6 +1,5 @@
+import 'dotenv/config';
 import mysql from 'mysql2/promise';
-
-// 我们借用之前的 data.ts 文件中的题目数据进行初始化导入
 const questionBanks = [
     {
         id: 'js', name: 'JavaScript高级', icon: 'fab fa-js-square', color: '#F7DF1E',
@@ -16,7 +15,9 @@ const questionBanks = [
             { q: '以下关于WeakMap的说法正确的是？', opts: ['键可以是任意类型', '可以被遍历', '键是弱引用，可被垃圾回收', '与Map完全相同'], ans: 2, exp: 'WeakMap的键必须是对象，且是弱引用。当键对象没有其他引用时，可被垃圾回收。WeakMap不可被遍历。' },
             { q: 'CSS中position:sticky的特性是？', opts: ['始终固定在视口', '相对定位但滚动到阈值时变为固定定位', '绝对定位的别名', '只在flex布局中生效'], ans: 1, exp: 'sticky定位是relative和fixed的混合体，元素在到达指定阈值前为relative，到达后变为fixed。' },
             { q: '关于箭头函数，以下哪项是正确的？', opts: ['有自己的this绑定', '可以作为构造函数', '没有arguments对象', '可以使用new调用'], ans: 2, exp: '箭头函数没有自己的this、arguments、super和new.target绑定，不能作为构造函数使用new调用。' },
-            { q: '以下哪个不是Vue3的响应式API？', opts: ['ref()', 'reactive()', 'computed()', 'observe()'], ans: 3, exp: 'observe()不是Vue3的响应式API。Vue3使用ref()、reactive()、computed()等组合式API，observe是Vue2内部的方法。' }
+            { q: '以下哪个不是Vue3的响应式API？', opts: ['ref()', 'reactive()', 'computed()', 'observe()'], ans: 3, exp: 'observe()不是Vue3的响应式API。Vue3使用ref()、reactive()、computed()等组合式API，observe是Vue2内部的方法。' },
+            { type: 'judge', q: 'JavaScript中的null == undefined 的结果为 true。', opts: ['正确', '错误'], ans: 0, exp: 'null == undefined 为 true（宽松相等会互相转换），但 null === undefined 为 false。' },
+            { type: 'multi', q: '以下哪些方法会返回一个新数组而不改变原数组？', opts: ['map()', 'filter()', 'splice()', 'concat()'], ans: [0, 1, 3], exp: 'map()、filter()、concat() 都返回新数组；splice() 会直接修改原数组。' }
         ]
     },
     {
@@ -88,11 +89,11 @@ const questionBanks = [
 
 async function seedData() {
   const connection = await mysql.createConnection({
-    host: '39.97.112.184',
-    port: 3306,
-    user: 'exam_skill',
-    password: 'exam_skill@yhjz',
-    database: 'exam_skill'
+    host: process.env.DATABASE_HOST || '127.0.0.1',
+    port: Number(process.env.DATABASE_PORT || 3306),
+    user: process.env.DATABASE_USER || 'root',
+    password: process.env.DATABASE_PASSWORD || '',
+    database: process.env.DATABASE_NAME || 'exam_skill'
   });
 
   try {
@@ -110,10 +111,11 @@ async function seedData() {
         // 检查是否已经存在该题（基于bank_id和内容简单判断）
         const [rows] = await connection.execute('SELECT id FROM `questions` WHERE bank_id = ? AND content = ?', [bank.id, q.q]);
         if (rows.length === 0) {
+          const type = q.type || 'single';
           await connection.execute(
-            `INSERT INTO \`questions\` (bank_id, content, options, answer_index, explanation, sort_order)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [bank.id, q.q, JSON.stringify(q.opts), q.ans, q.exp, i]
+            `INSERT INTO \`questions\` (bank_id, type, content, options, answer_index, answer_multi, explanation, sort_order)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [bank.id, type, q.q, JSON.stringify(q.opts), type === 'multi' ? 0 : q.ans, type === 'multi' ? JSON.stringify(q.ans) : null, q.exp, i]
           );
         }
       }

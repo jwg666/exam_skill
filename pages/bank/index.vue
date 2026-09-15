@@ -1,20 +1,22 @@
 <script setup lang="ts">
+import { useStorage } from '@vueuse/core'
 import { useAppStore } from '~/stores/app'
 
 const appStore = useAppStore()
 const searchQuery = ref('')
+const currentBankCategory = useStorage('quizApp_currentBankCategory', 'all')
 
 const { data: questionBanks } = await useFetch<any[]>('/api/banks')
 
 const filteredBanks = computed(() => {
   let banks = questionBanks.value || []
-  if (appStore.currentBankCategory !== 'all') {
-    banks = banks.filter(b => b.type === appStore.currentBankCategory)
+  if (currentBankCategory.value !== 'all') {
+    banks = banks.filter(b => b.type === currentBankCategory.value)
   }
   if (searchQuery.value) {
     const s = searchQuery.value.toLowerCase()
-    banks = banks.filter(b => 
-      b.name.toLowerCase().includes(s) || 
+    banks = banks.filter(b =>
+      b.name.toLowerCase().includes(s) ||
       b.description?.toLowerCase().includes(s)
     )
   }
@@ -31,7 +33,7 @@ const categories = [
 ]
 
 const setCategory = (cat: string) => {
-  appStore.currentBankCategory = cat
+  currentBankCategory.value = cat
 }
 </script>
 
@@ -61,7 +63,7 @@ const setCategory = (cat: string) => {
           v-for="cat in categories" 
           :key="cat.key"
           class="g-tag cursor-pointer border-none px-3.5 py-1.5"
-          :class="appStore.currentBankCategory === cat.key ? 'bg-[var(--accent)] text-white' : 'bg-[var(--card)] text-[var(--fg2)]'"
+          :class="currentBankCategory === cat.key ? 'bg-[var(--accent)] text-white' : 'bg-[var(--card)] text-[var(--fg2)]'"
           @click="setCategory(cat.key)"
         >
           {{ cat.name }}

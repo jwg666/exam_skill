@@ -10,36 +10,36 @@ const phone = ref('')
 const password = ref('')
 const name = ref('')
 const isPasswordVisible = ref(false)
+const submitting = ref(false)
 const appStore = useAppStore()
 const router = useRouter()
-const { $toast } = useNuxtApp()
+const { $toast, $api } = useNuxtApp()
+
+const afterAuth = async (data: any, msg: string) => {
+  appStore.setSession(data)
+  appStore.toastAchievements(data.newlyUnlocked || [])
+  $toast.success(msg)
+  await appStore.fetchAll()
+  router.push('/')
+}
 
 const handleLogin = async () => {
   if (!phone.value || !password.value) {
     $toast.error('请输入手机号和密码')
     return
   }
-  
+  if (submitting.value) return
+  submitting.value = true
   try {
-    const { data, error } = await useFetch('/api/auth/login', {
+    const data = await $api<any>('/api/auth/login', {
       method: 'POST',
       body: { phone: phone.value, password: password.value }
     })
-
-    if (error.value) {
-      $toast.error(error.value.data?.message || '登录失败')
-      return
-    }
-
-    appStore.syncUserData(data.value)
-    $toast.success('登录成功')
-    appStore.checkAchievement('first_login')
-    
-    setTimeout(() => {
-      router.push('/')
-    }, 1000)
-  } catch (e) {
-    $toast.error('网络错误')
+    await afterAuth(data, '登录成功')
+  } catch (e: any) {
+    $toast.error(e?.data?.message || '网络错误')
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -48,32 +48,22 @@ const handleRegister = async () => {
     $toast.error('请填写完整信息')
     return
   }
-
   if (password.value.length < 6) {
     $toast.error('密码不能少于6位')
     return
   }
-
+  if (submitting.value) return
+  submitting.value = true
   try {
-    const { data, error } = await useFetch('/api/auth/register', {
+    const data = await $api<any>('/api/auth/register', {
       method: 'POST',
       body: { name: name.value, phone: phone.value, password: password.value }
     })
-
-    if (error.value) {
-      $toast.error(error.value.data?.message || '注册失败')
-      return
-    }
-
-    appStore.syncUserData(data.value)
-    $toast.success('注册成功')
-    appStore.checkAchievement('first_login')
-    
-    setTimeout(() => {
-      router.push('/')
-    }, 1000)
-  } catch (e) {
-    $toast.error('网络错误')
+    await afterAuth(data, '注册成功')
+  } catch (e: any) {
+    $toast.error(e?.data?.message || '网络错误')
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -85,8 +75,8 @@ const toggleMode = () => {
 }
 
 onMounted(() => {
-  if (appStore.user) {
-    router.push('/')
+  if (appStore.token) {
+    router.replace('/')
   }
 })
 </script>

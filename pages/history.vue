@@ -3,10 +3,24 @@ import { useAppStore } from '~/stores/app'
 
 const appStore = useAppStore()
 const router = useRouter()
+const { $toast, $api } = useNuxtApp()
 
-const formatDate = (timestamp: number) => {
-  const d = new Date(timestamp)
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+const loading = ref(true)
+
+onMounted(async () => {
+  try {
+    appStore.history = await $api<any[]>('/api/histories')
+  } catch {
+    $toast.error('加载记录失败')
+  } finally {
+    loading.value = false
+  }
+})
+
+const formatDateTime = (iso: string) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 const formatTime = (seconds: number) => {
@@ -31,7 +45,10 @@ const formatTime = (seconds: number) => {
 
     <!-- 记录列表 -->
     <div class="space-y-4">
-      <div v-if="appStore.history.length === 0" class="text-center py-20 fade-up">
+      <div v-if="loading" class="text-center py-20 text-[#94A3B8]">
+        <i class="fas fa-spinner fa-spin text-2xl"></i>
+      </div>
+      <div v-else-if="appStore.history.length === 0" class="text-center py-20 fade-up">
         <div class="w-24 h-24 rounded-full bg-[#162032] flex items-center justify-center mx-auto mb-4 border border-[#243049]/50 shadow-inner">
           <i class="fas fa-history text-4xl text-[#64748B]"></i>
         </div>
@@ -42,32 +59,29 @@ const formatTime = (seconds: number) => {
       </div>
 
       <TransitionGroup name="list">
-        <div v-for="(h, i) in appStore.history" :key="h.time" class="g-card p-5 relative overflow-hidden group fade-up" :style="{ animationDelay: `${i * 0.05}s` }">
-          <div class="absolute top-0 left-0 w-1 h-full" :class="h.score >= 60 ? 'bg-gradient-to-b from-teal-400 to-teal-600' : 'bg-gradient-to-b from-red-400 to-orange-500'"></div>
-          
+        <div v-for="(h, i) in appStore.history" :key="h.id" class="g-card p-5 relative overflow-hidden group fade-up" :style="{ animationDelay: `${i * 0.05}s` }">
+          <div class="absolute top-0 left-0 w-1 h-full" :class="h.accuracy >= 60 ? 'bg-gradient-to-b from-teal-400 to-teal-600' : 'bg-gradient-to-b from-red-400 to-orange-500'"></div>
+
           <div class="flex items-start justify-between mb-3 pl-2">
             <div>
               <h3 class="text-base font-bold flex items-center gap-2 mb-1">
                 {{ h.bankName }}
-                <span class="g-tag text-[10px] py-0.5 px-1.5" :class="h.mode === 'exam' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'">
-                  {{ h.mode === 'exam' ? '考试' : '练习' }}
-                </span>
               </h3>
-              <p class="text-xs text-[#64748B] font-medium">{{ formatDate(h.time) }}</p>
+              <p class="text-xs text-[#64748B] font-medium">{{ formatDateTime(h.createdAt || h.date) }}</p>
             </div>
             <div class="text-right">
-              <span class="text-2xl font-black" :class="h.score >= 60 ? 'text-teal-400' : 'text-red-400'">{{ h.score }}</span>
+              <span class="text-2xl font-black" :class="h.accuracy >= 60 ? 'text-teal-400' : 'text-red-400'">{{ h.accuracy }}</span>
               <span class="text-xs font-bold text-[#64748B]">分</span>
             </div>
           </div>
-          
+
           <div class="pl-2 pt-3 border-t border-[#243049] flex items-center justify-between text-xs font-medium">
             <span class="flex items-center gap-1.5 text-[#94A3B8]">
-              <i class="far fa-clock text-blue-400"></i> 用时 {{ formatTime(h.elapsed) }}
+              <i class="far fa-clock text-blue-400"></i> 用时 {{ formatTime(h.time) }}
             </span>
             <div class="flex gap-3">
               <span class="text-green-400"><i class="fas fa-check"></i> {{ h.correct }}</span>
-              <span class="text-red-400"><i class="fas fa-times"></i> {{ h.wrong }}</span>
+              <span class="text-red-400"><i class="fas fa-times"></i> {{ h.total - h.correct }}</span>
             </div>
           </div>
         </div>

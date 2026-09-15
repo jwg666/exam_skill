@@ -1,75 +1,60 @@
-# Nuxt Minimal Starter
+# 题海拾贝（极客考证）
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+移动端优先的智能刷题应用：题库中心、答题引擎（单选/判断/多选）、错题本、收藏、打卡、成就、排行榜、学习报告、消息通知与题库管理后台。
 
-## Setup
+技术栈：Nuxt 3 + Vue 3 + TypeScript + Tailwind CSS + Pinia/VueUse + MySQL（mysql2）。所有业务数据存于 MySQL，前端仅持久化登录 token 与用户基础信息。
 
-Make sure to install dependencies:
+## 快速开始
 
 ```bash
-# npm
-npm install
-
-# pnpm
 pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+1. 复制 `.env.example` 为 `.env`，填入数据库连接信息与 `AUTH_SECRET`（可用 `openssl rand -hex 32` 生成）。
+2. 初始化数据库结构并迁移存量明文密码（幂等，可重复执行）：
 
 ```bash
-# npm
-npm run dev
+node scripts/migrate.js
+```
 
-# pnpm
+3. （可选）灌入种子题库数据：
+
+```bash
+node seed_data.js
+```
+
+4. 启动开发服务器：
+
+```bash
 pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+## 目录结构
 
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+```
+├── pages/                 # 页面（首页/题库/答题/错题本/收藏/历史/统计/成就/通知/我的/管理后台）
+├── server/
+│   ├── api/               # REST 接口（auth/checkins/wrong-book/favorites/histories/quiz/stats/ranking/achievements/notifications/admin）
+│   └── utils/             # db（连接池，会话时区 +08:00）、auth（HMAC token 鉴权）、game（成就/通知）
+├── stores/                # Pinia：app（会话与用户数据）、quiz（答题现场）
+├── shared/achievements.ts # 前后端共用的成就定义
+├── middleware/auth.global.ts  # 登录拦截
+├── scripts/migrate.js     # 幂等建表/补列/密码哈希迁移
+└── seed_data.js           # 种子题库（含判断/多选示例）
 ```
 
-Locally preview production build:
+## 关键设计
 
-```bash
-# npm
-npm run preview
+- **鉴权**：登录签发 HMAC 签名 token（30 天），写接口统一经 `requireUserId` 校验，前端由 `$api` 插件自动附加 `Authorization` 头，401 自动踢回登录页。
+- **密码**：bcrypt 哈希存储；存量明文账号在登录时自动升级，也可跑 `scripts/migrate.js` 一次性迁移。
+- **成就**：服务端在交卷/打卡/收藏/清空错题本时判定并落库（`user_achievements`），返回 `newlyUnlocked` 由前端弹 Toast。
+- **题型**：`questions.type` 支持 single/judge/multi，多选答案存 `answer_multi` JSON 数组，判分须完全一致。
+- **时区**：连接池统一会话时区为东八区，日期统一 `YYYY-MM-DD`，历史/统计按库内时间聚合。
 
-# pnpm
-pnpm preview
+## 管理后台
 
-# yarn
-yarn preview
+`users.is_admin = 1` 的账号登录后，「我的 → 题库管理」可新建/删除题库、增删题目（支持三种题型）。设置管理员：
 
-# bun
-bun run preview
+```sql
+UPDATE users SET is_admin = 1 WHERE phone = '你的手机号';
 ```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
