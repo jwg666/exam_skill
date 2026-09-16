@@ -46,8 +46,10 @@ pnpm dev
 ## 关键设计
 
 - **鉴权**：登录签发 HMAC 签名 token（30 天），写接口统一经 `requireUserId` 校验，前端由 `$api` 插件自动附加 `Authorization` 头，401 自动踢回登录页。
+- **注册/登录**：注册使用手机号 + 短信验证码（昵称选填，默认手机号），不设置密码；登录支持「验证码登录」与「密码登录」（存量账号/管理员）双模式。短信注册账号的密码字段写入不可登录的随机哈希占位。
+- **短信验证码**：与 rixingyishan 项目同一阿里云通道（环境变量名一致）。`SMS_PROVIDER=aliyun` 为真实下发（需填 `ALIYUN_ACCESS_KEY_ID/SECRET`、`ALIYUN_SMS_SIGN_NAME/TEMPLATE_CODE`，模板参数 `{"code":"xxxxxx"}`）；其他值为 mock（固定 `123456`，开发用）。验证码 6 位、TTL 300 秒、最多验证 5 次、同号 60 秒限频、单号每日 10 条上限。
 - **密码**：bcrypt 哈希存储；存量明文账号在登录时自动升级，也可跑 `scripts/migrate.js` 一次性迁移。
-- **成就**：服务端在交卷/打卡/收藏/清空错题本时判定并落库（`user_achievements`），返回 `newlyUnlocked` 由前端弹 Toast。
+- **成就**：服务端在交卷/打卡/收藏/清空错题本/注册登录时判定并落库（`user_achievements`），返回 `newlyUnlocked` 由前端弹 Toast。
 - **题型**：`questions.type` 支持 single/judge/multi，多选答案存 `answer_multi` JSON 数组，判分须完全一致。
 - **时区**：连接池统一会话时区为东八区，日期统一 `YYYY-MM-DD`，历史/统计按库内时间聚合。
 

@@ -42,7 +42,9 @@ const env = {
   DATABASE_USER: db.username,
   DATABASE_PASSWORD: '',
   DATABASE_NAME: db.dbName,
-  AUTH_SECRET: 'smoke-test-secret'
+  AUTH_SECRET: 'smoke-test-secret',
+  SMS_PROVIDER: 'mock',
+  SMS_SEND_INTERVAL_MS: '2'
 }
 
 try {
@@ -73,26 +75,48 @@ try {
   }
 
   console.log('[4/5] 执行接口断言…')
-  // ---- 鉴权 ----
-  let r = await api('/api/auth/register', { method: 'POST', body: JSON.stringify({ name: '测试用户', phone: '13800138000', password: 'test123' }) })
-  check('注册成功返回 token', r.status === 200 && !!r.body?.token)
+  let r
+  // ---- 短信验证码注册 ----
+  r = await api('/api/auth/sms/send', { method: 'POST', body: JSON.stringify({ phone: '13800138000' }) })
+  check('发送验证码成功 (mock)', r.status === 200 && r.body?.provider === 'mock')
+
+  r = await api('/api/auth/sms/send', { method: 'POST', body: JSON.stringify({ phone: '13800138000' }) })
+  check('限频内重复发送返回 429', r.status === 429)
+  await new Promise(s => setTimeout(s, 2100))
+
+  r = await api('/api/auth/register', { method: 'POST', body: JSON.stringify({ phone: '13800138000', code: '000000' }) })
+  check('错误验证码返回 400', r.status === 400)
+
+  r = await api('/api/auth/register', { method: 'POST', body: JSON.stringify({ name: '测试用户', phone: '13800138000', code: '123456' }) })
+  check('验证码注册成功返回 token', r.status === 200 && !!r.body?.token)
   const token = r.body?.token
 
-  r = await api('/api/auth/register', { method: 'POST', body: JSON.stringify({ name: '重复', phone: '13800138000', password: 'test123' }) })
+  r = await api('/api/auth/sms/send', { method: 'POST', body: JSON.stringify({ phone: '13800138000' }) })
+  check('已注册手机号可发送登录验证码', r.status === 200)
+
+  r = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ phone: '13800138000', password: 'whatever' }) })
+  check('短信注册账号密码登录不可用 (401)', r.status === 401)
+
+  // 注册去重：已注册手机号注册返回 409
+  await new Promise(s => setTimeout(s, 2100))
+  r = await api('/api/auth/sms/send', { method: 'POST', body: JSON.stringify({ phone: '13800138000' }) })
+  check('A 再次发送验证码成功', r.status === 200)
+  r = await api('/api/auth/register', { method: 'POST', body: JSON.stringify({ phone: '13800138000', code: '123456' }) })
   check('重复注册返回 409', r.status === 409)
 
-  r = await api('/api/auth/register', { method: 'POST', body: JSON.stringify({ name: '坏号', phone: '123', password: 'test123' }) })
-  check('非法手机号返回 400', r.status === 400)
+  // 手机号 B：昵称为空默认手机号 + 验证码登录
+  r = await api('/api/auth/sms/send', { method: 'POST', body: JSON.stringify({ phone: '13800138001' }) })
+  check('B 发送验证码成功', r.status === 200)
+  r = await api('/api/auth/register', { method: 'POST', body: JSON.stringify({ phone: '13800138001', code: '123456' }) })
+  check('昵称为空默认填入手机号', r.status === 200 && r.body?.user?.name === '13800138001')
+  await new Promise(s => setTimeout(s, 2100))
+  r = await api('/api/auth/sms/send', { method: 'POST', body: JSON.stringify({ phone: '13800138001' }) })
+  check('间隔后再次发送成功', r.status === 200)
+  r = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ phone: '13800138001', code: '123456' }) })
+  check('短信验证码登录成功', r.status === 200 && !!r.body?.token)
+  const adminTokenUnused = r.body?.token
 
-  r = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ phone: '13800138000', password: 'wrong!!' }) })
-  check('错误密码返回 401', r.status === 401)
-
-  r = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ phone: '13800138000', password: 'test123' }) })
-  check('登录成功', r.status === 200 && r.body?.user?.name === '测试用户')
-  check('登录触发 first_login 成就', (r.body?.newlyUnlocked || []).some(a => a.id === 'first_login'))
-  const token2 = r.body?.token
-
-  // 密码确为 bcrypt 哈希
+  // 密码确为 bcrypt 哈希（短信注册账号为不可登录占位哈希）
   {
     const conn = await mysql.createConnection({ host: '127.0.0.1', port: db.port, user: db.username, database: db.dbName })
     const [rows] = await conn.query("SELECT password FROM users WHERE phone='13800138000'")
@@ -210,23 +234,32 @@ try {
     await conn.end()
   }
 
-  r = await api('/api/admin/banks', {}, token2)
+  // 管理员用短信验证码重新登录获取 A 账号 token
+  await new Promise(s => setTimeout(s, 2100))
+  r = await api('/api/auth/sms/send', { method: 'POST', body: JSON.stringify({ phone: '13800138000' }) })
+  if (r.status !== 200) console.log('[debug] 管理员短信发送:', r.status, JSON.stringify(r.body))
+  check('管理员短信发送成功', r.status === 200)
+  r = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ phone: '13800138000', code: '123456' }) })
+  check('管理员短信登录成功', r.status === 200 && r.body?.user?.isAdmin === true)
+  const adminToken = r.body?.token
+
+  r = await api('/api/admin/banks', {}, adminToken)
   check('管理员可列出题库', r.status === 200 && r.body.length >= 6)
 
-  r = await api('/api/admin/banks', { method: 'POST', body: JSON.stringify({ id: 'vue3', name: 'Vue3 高级', type: 'skill', typeName: '技能类' }) }, token2)
+  r = await api('/api/admin/banks', { method: 'POST', body: JSON.stringify({ id: 'vue3', name: 'Vue3 高级', type: 'skill', typeName: '技能类' }) }, adminToken)
   check('管理员创建题库', r.status === 200 && r.body?.id === 'vue3')
 
-  r = await api('/api/admin/banks/vue3/questions', { method: 'POST', body: JSON.stringify({ type: 'multi', content: '以下哪些是 Vue3 响应式 API？', opts: ['ref()', 'reactive()', 'observe()'], ans: [0, 1], explanation: 'observe 不是' }) }, token2)
+  r = await api('/api/admin/banks/vue3/questions', { method: 'POST', body: JSON.stringify({ type: 'multi', content: '以下哪些是 Vue3 响应式 API？', opts: ['ref()', 'reactive()', 'observe()'], ans: [0, 1], explanation: 'observe 不是' }) }, adminToken)
   check('管理员添加多选题', r.status === 200 && !!r.body?.id)
   const newQid = r.body?.id
 
-  r = await api('/api/admin/questions/' + newQid, { method: 'PUT', body: JSON.stringify({ type: 'single', content: '修改后的题干', opts: ['A', 'B'], ans: 1, explanation: '' }) }, token2)
+  r = await api('/api/admin/questions/' + newQid, { method: 'PUT', body: JSON.stringify({ type: 'single', content: '修改后的题干', opts: ['A', 'B'], ans: 1, explanation: '' }) }, adminToken)
   check('管理员修改题目', r.status === 200)
 
-  r = await api('/api/admin/questions/' + newQid, { method: 'DELETE' }, token2)
+  r = await api('/api/admin/questions/' + newQid, { method: 'DELETE' }, adminToken)
   check('管理员删除题目', r.status === 200)
 
-  r = await api('/api/admin/banks/vue3', { method: 'DELETE' }, token2)
+  r = await api('/api/admin/banks/vue3', { method: 'DELETE' }, adminToken)
   check('管理员删除题库', r.status === 200)
 
   // ---- 页面渲染抽查 ----

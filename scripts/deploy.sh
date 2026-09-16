@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # 一键部署脚本：构建 → 打包 → 上传 → 服务器补依赖 → 重启服务
 # 用法: bash scripts/deploy.sh [SERVER] [SSH_KEY] [DEPLOY_DIR] [APP_PORT]
-# 默认: SERVER=root@60.205.1.17  SSH_KEY=~/.ssh/jq_rsa_lf.pem  DEPLOY_DIR=/home/exam  APP_PORT=8080
+# 默认: SERVER=root@39.106.34.215  SSH_KEY=~/.ssh/yuzhe_lf.pem  DEPLOY_DIR=/home/exam  APP_PORT=3000
+# 线上入口: https://exam.qdyhjz.cn （nginx 反代 80/443 → 127.0.0.1:3000，服务名 exam-app）
 set -e
 
-SERVER="${1:-root@60.205.1.17}"
-SSH_KEY="${2:-$HOME/.ssh/jq_rsa_lf.pem}"
+SERVER="${1:-root@39.106.34.215}"
+SSH_KEY="${2:-$HOME/.ssh/yuzhe_lf.pem}"
 DEPLOY_DIR="${3:-/home/exam}"
-APP_PORT="${4:-8080}"
+APP_PORT="${4:-3000}"
 
 echo "[1/6] 本地构建..."
 pnpm build
