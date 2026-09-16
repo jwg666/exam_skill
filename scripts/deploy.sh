@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # 一键部署脚本：构建 → 打包 → 上传 → 服务器补依赖 → 重启服务
-# 用法: bash scripts/deploy.sh [SERVER] [SSH_KEY] [DEPLOY_DIR] [APP_PORT]
-# 默认: SERVER=root@39.106.34.215  SSH_KEY=~/.ssh/yuzhe_lf.pem  DEPLOY_DIR=/home/exam  APP_PORT=3000
-# 线上入口: https://exam.qdyhjz.cn （nginx 反代 80/443 → 127.0.0.1:3000，服务名 exam-app）
+# 用法: bash scripts/deploy.sh <SERVER> <SSH_KEY> [DEPLOY_DIR] [APP_PORT]
+# 例:   bash scripts/deploy.sh root@<服务器IP> ~/.ssh/<密钥> /home/exam 3000
+# 凭据不入库：数据库/短信等配置存于服务器上 $DEPLOY_DIR/.env（权限 600），
+# 首次部署时若无则上传本地 .env 初始化，之后的部署不会覆盖服务器上的配置。
 set -e
 
-SERVER="${1:-root@39.106.34.215}"
-SSH_KEY="${2:-$HOME/.ssh/yuzhe_lf.pem}"
+SERVER="${1:?用法: deploy.sh <SERVER> <SSH_KEY> [DEPLOY_DIR] [APP_PORT]}"
+SSH_KEY="${2:?缺少 SSH_KEY 参数}"
 DEPLOY_DIR="${3:-/home/exam}"
 APP_PORT="${4:-3000}"
 
@@ -51,7 +52,11 @@ EOF
 echo "[3/6] 上传构建产物与环境配置..."
 scp -o BatchMode=yes -i "$SSH_KEY" .server-package.json "$SERVER:$DEPLOY_DIR/package.json"
 tar czf - .output | ssh -o BatchMode=yes -i "$SSH_KEY" "$SERVER" "mkdir -p $DEPLOY_DIR && tar xzf - -C $DEPLOY_DIR"
-scp -o BatchMode=yes -i "$SSH_KEY" .env "$SERVER:$DEPLOY_DIR/.env"
+# .env 只在服务器上不存在时才初始化上传；已存在则保留服务器配置（密钥以服务器为准）
+ssh -o BatchMode=yes -i "$SSH_KEY" "$SERVER" "if [ ! -f $DEPLOY_DIR/.env ]; then echo NEED_ENV; fi" | grep -q NEED_ENV && {
+  scp -o BatchMode=yes -i "$SSH_KEY" .env "$SERVER:$DEPLOY_DIR/.env"
+  echo "  已上传初始 .env"
+} || echo "  服务器已有 .env，保留不覆盖"
 ssh -o BatchMode=yes -i "$SSH_KEY" "$SERVER" "chmod 600 $DEPLOY_DIR/.env"
 
 echo "[4/6] 服务器安装补依赖..."

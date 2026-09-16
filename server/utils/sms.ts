@@ -1,4 +1,4 @@
-import { createHmac, randomInt } from 'node:crypto'
+import { createHmac, randomInt, randomUUID } from 'node:crypto'
 
 // 短信验证码：与 rixingyishan-service 相同的通道设计与防爆破规则
 // - 验证码 6 位随机数字，内存存储，TTL 300s（SMS_CODE_TTL 可调），最多验证 5 次，成功即销毁
@@ -123,7 +123,7 @@ export async function sendSmsCode(phone: string, code: string): Promise<void> {
     RegionId: 'cn-hangzhou',
     SignName: signName,
     SignatureMethod: 'HMAC-SHA1',
-    SignatureNonce: randomInt(0, Number.MAX_SAFE_INTEGER).toString(),
+    SignatureNonce: randomUUID().replace(/-/g, ''),
     SignatureVersion: '1.0',
     TemplateCode: templateCode,
     TemplateParam: JSON.stringify({ code }),
