@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { useStorage } from '@vueuse/core'
+import { useStorage, StorageSerializers } from '@vueuse/core'
 
 // 单题答案：单选/判断为 number，多选为 number[]；未答为 undefined
 export type QuizAnswer = number | number[]
@@ -18,7 +18,10 @@ export const useQuizStore = defineStore('quiz', () => {
   const elapsed = useStorage('quizState_elapsed', 0)
   const mode = useStorage<'practice' | 'exam'>('quizState_mode', 'practice')
   // 交卷后的结果快照（result 页展示用）
-  const result = useStorage<any>('quizState_result', null)
+  // 默认值为 null 时 VueUse 会用 String() 序列化对象，必须显式指定对象序列化器
+  const result = useStorage<any>('quizState_result', null, undefined, { serializer: StorageSerializers.object })
+  // 自愈：清理历史版本写入的损坏数据（"[object Object]" 字符串）
+  if (typeof result.value === 'string') result.value = null
 
   function isAnsweredAt(i: number): boolean {
     return answers.value[i] !== undefined

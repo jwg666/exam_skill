@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { useStorage } from '@vueuse/core'
+import { useStorage, StorageSerializers } from '@vueuse/core'
 
 // 服务端返回的成就定义（含解锁状态）
 export interface AchievementItem {
@@ -15,7 +15,10 @@ export interface AchievementItem {
 export const useAppStore = defineStore('app', () => {
   // 仅 token 与用户基础信息持久化；业务数据全部来自服务端
   const token = useStorage<string>('quizApp_token', '')
-  const user = useStorage<any>('quizApp_user', null)
+  // 默认值为 null 时 VueUse 会用 String() 序列化对象，必须显式指定对象序列化器
+  const user = useStorage<any>('quizApp_user', null, undefined, { serializer: StorageSerializers.object })
+  // 自愈：清理历史版本写入的损坏数据（"[object Object]" 字符串）
+  if (typeof user.value === 'string') user.value = null
 
   // 会话内业务数据（登录后拉取）
   const wrongBook = ref<any[]>([])
@@ -65,11 +68,27 @@ export const useAppStore = defineStore('app', () => {
     unreadCount.value = 0
   }
 
-  // 登录后并行拉取全量用户数据
+  // 登录后并行拉取全量用户数据；本地 user 丢失/损坏时先从服务端恢复
   async function fetchAll() {
     if (!token.value) return
     const { $api } = useNuxtApp()
     try {
+      if (!user.value || typeof user.value !== 'object' || !user.value.id) {
+        try {
+          const me = await $api<any>('/api/users/me')
+          user.value = {
+            id: me.id,
+            phone: me.phone,
+            name: me.name,
+            totalAnswered: me.totalAnswered || 0,
+            totalCorrect: me.totalCorrect || 0,
+            streak: me.streak || 0,
+            isAdmin: !!me.isAdmin,
+            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + me.name,
+            loginTime: Date.now()
+          }
+        } catch { /* 恢复失败不阻塞其余数据 */ }
+      }
       const [checkin, achievementsRes, wrong, favs, historyRes, progress] = await Promise.all([
         $api('/api/checkins'),
         $api('/api/achievements'),
