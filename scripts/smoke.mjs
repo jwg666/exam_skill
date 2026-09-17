@@ -53,6 +53,7 @@ try {
   if (m.status !== 0) throw new Error('migrate 失败: ' + m.stderr)
   const s = spawnSync('node', ['seed_data.js'], { env, encoding: 'utf8' })
   if (s.status !== 0) throw new Error('seed 失败: ' + s.stderr)
+  spawnSync('node', ['scripts/seed-assessment.js'], { env, encoding: 'utf8' })
   console.log('  ' + (s.stdout.trim().split('\n').pop() || 'seeded'))
 
   console.log('[3/5] 启动生产构建服务器…')
@@ -143,7 +144,7 @@ try {
   // ---- 题库与题目 ----
   r = await api('/api/banks')
   const bankIds = (r.body || []).map(b => b.id)
-  check('题库列表含 6 个种子题库', r.status === 200 && bankIds.length === 6, `got ${bankIds.length}`)
+  check('题库列表含 8 个题库（6 知识 + 2 测评）', r.status === 200 && bankIds.length === 8, `got ${bankIds.length}`)
 
   r = await api('/api/banks/js')
   const qs = r.body?.questions || []
@@ -156,15 +157,17 @@ try {
   check('随机抽题返回 5 题', r.status === 200 && r.body.questions.length === 5)
 
   // ---- 交卷 ----
-  r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'js', total: 12, correct: 9, timeSpent: 95, wrongQuestions: [qs[0].id, qs[1].id, qs[2].id] }) }, token)
-  check('交卷成功 accuracy=75', r.status === 200 && r.body.accuracy === 75)
+  // 前 3 题故意答错，accuracy=75
+  const jsAnswers = qs.map((q, i) => (i < 3 ? (q.ans + 1) % q.opts.length : q.ans))
+  r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'js', timeSpent: 95, answers: jsAnswers }) }, token)
+  check('交卷成功 accuracy=75', r.status === 200 && r.body.accuracy === 75, JSON.stringify(r.body).slice(0, 200))
   check('交卷触发 first_quiz 成就', (r.body?.newlyUnlocked || []).some(a => a.id === 'first_quiz'))
   check('交卷不触发 acc_80（75<80）', !(r.body?.newlyUnlocked || []).some(a => a.id === 'acc_80'))
 
-  r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'js', total: -1, correct: 0, timeSpent: 0 }) }, token)
-  check('交卷参数校验拒绝非法 total', r.status === 400)
+  r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'js', timeSpent: -1, answers: [] }) }, token)
+  check('交卷参数校验拒绝非法请求', r.status === 400)
 
-  r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'js', total: 12, correct: 0, timeSpent: 5 }) }, 'stolen.token')
+  r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'js', timeSpent: 5, answers: [0] }) }, 'stolen.token')
   check('伪造 token 交卷被拒', r.status === 401)
 
   // ---- 错题本 ----
@@ -264,7 +267,7 @@ try {
 
   // ---- 分类管理 ----
   r = await api('/api/categories')
-  check('分类接口返回默认五类', r.status === 200 && r.body.length === 5, `got ${r.body?.length}`)
+  check('分类接口返回默认六类（含专业测评）', r.status === 200 && r.body.length === 6, `got ${r.body?.length}`)
 
   // B 账号始终为普通用户，用于验证权限拦截（A 在后续环节会被提升为管理员）
   r = await api('/api/admin/categories', { method: 'POST', body: JSON.stringify({ code: 'music', name: '音乐类', sort: 6 }) }, adminTokenUnused)
@@ -288,7 +291,48 @@ try {
   r = await api(`/api/admin/categories/${musicCat.id}`, { method: 'DELETE' }, adminToken)
   check('删除未使用分类成功', r.status === 200)
   r = await api('/api/categories')
-  check('删除后分类数恢复五类', r.body.length === 5)
+  check('删除后分类数恢复六类', r.body.length === 6)
+
+  // ---- 测评题库（MBTI / IQ）----
+  r = await api('/api/banks/mbti')
+  check('MBTI 题库 28 题且不下发答案', r.status === 200 && r.body.questions.length === 28 && r.body.questions[0].ans === undefined)
+  const mbtiAnswers = r.body.questions.map((_, i) => i % 2)
+  r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'mbti', timeSpent: 120, answers: mbtiAnswers }) }, token)
+  check('MBTI 交卷返回人格报告', r.status === 200 && r.body?.report?.kind === 'mbti' && /^[IE][SN][TF][JP]$/.test(r.body.report.typeCode || ''), JSON.stringify(r.body?.report).slice(0, 120))
+  check('MBTI 报告含四维倾向', (r.body?.report?.dims || []).length === 4)
+  check('MBTI 报告含优势/盲点/方向', (r.body.report.strengths || []).length > 0 && (r.body.report.careers || []).length > 0)
+
+  // 全选首选项 → 每个维度左极 100%
+  r = await api('/api/banks/mbti')
+  const allLeft = r.body.questions.map(() => 0)
+  r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'mbti', timeSpent: 60, answers: allLeft }) }, token)
+  check('MBTI 全选左侧维度百分比 100%', r.body?.report?.dims?.every((d) => d.leftPct === 100) === true)
+
+  r = await api('/api/banks/iq')
+  check('IQ 题库 30 题且不下发答案', r.body.questions.length === 30 && r.body.questions[0].ans === undefined)
+  {
+    // 从测试库取正确答案构造满分作答
+    const conn = await mysql.createConnection({ host: '127.0.0.1', port: db.port, user: db.username, database: db.dbName })
+    const [iqRows] = await conn.query("SELECT answer_index FROM questions WHERE bank_id = 'iq' ORDER BY sort_order ASC")
+    const iqPerfect = (iqRows).map((q) => q.answer_index)
+    const wrongBefore = await conn.query("SELECT COUNT(*) AS c FROM wrong_books WHERE user_id = (SELECT id FROM users WHERE phone='13800138000')")
+    await conn.end()
+
+    r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'iq', timeSpent: 600, answers: iqPerfect }) }, token)
+    check('IQ 满分作答 IQ=145 极有天赋', r.status === 200 && r.body?.report?.kind === 'iq' && r.body.report.iq === 145 && r.body.report.tier === '极有天赋', JSON.stringify({ iq: r.body?.report?.iq, tier: r.body?.report?.tier }))
+    check('IQ 报告含五维分析', (r.body?.report?.byCat || []).length === 5, JSON.stringify(r.body?.report?.byCat))
+
+    const allWrong = iqPerfect.map(() => -1)
+    r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'iq', timeSpent: 60, answers: allWrong }) }, token)
+    check('IQ 全部未答 IQ=60', r.body?.report?.iq === 60)
+
+    const conn2 = await mysql.createConnection({ host: '127.0.0.1', port: db.port, user: db.username, database: db.dbName })
+    const [wrongAfter] = await conn2.query("SELECT COUNT(*) AS c FROM wrong_books WHERE user_id = (SELECT id FROM users WHERE phone='13800138000')")
+    check('测评作答不进错题本', Number((wrongAfter)[0].c) === Number(wrongBefore[0][0].c))
+    const [histRep] = await conn2.query("SELECT report FROM histories WHERE user_id = (SELECT id FROM users WHERE phone='13800138000') AND bank_id = 'mbti' AND report IS NOT NULL LIMIT 1")
+    check('报告已持久化到历史记录', (histRep).length === 1)
+    await conn2.end()
+  }
 
   // ---- 页面渲染抽查 ----
   for (const p of ['/', '/login', '/bank', '/stats', '/achievements', '/notifications', '/profile', '/wrong', '/favorites', '/history', '/admin']) {

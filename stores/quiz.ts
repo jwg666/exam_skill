@@ -7,6 +7,7 @@ export type QuizAnswer = number | number[]
 export const useQuizStore = defineStore('quiz', () => {
   const bankId = useStorage<string | null>('quizState_bankId', null)
   const bankName = useStorage<string>('quizState_bankName', '')
+  const kind = useStorage<'quiz' | 'assessment'>('quizState_kind', 'quiz')
   const questions = useStorage<any[]>('quizState_questions', [])
   const currentIdx = useStorage('quizState_currentIdx', 0)
   const answers = useStorage<Record<number, QuizAnswer>>('quizState_answers', {})
@@ -27,7 +28,7 @@ export const useQuizStore = defineStore('quiz', () => {
   function isCorrectAt(i: number): boolean {
     const q = questions.value[i]
     const a = answers.value[i]
-    if (!q || a === undefined) return false
+    if (!q || a === undefined || q.ans === undefined) return false
     if ((q.type || 'single') === 'multi') {
       const right: number[] = Array.isArray(q.ans) ? [...q.ans].sort() : []
       const got: number[] = Array.isArray(a) ? [...a].sort() : []
@@ -39,6 +40,7 @@ export const useQuizStore = defineStore('quiz', () => {
   function resetQuiz() {
     bankId.value = null
     bankName.value = ''
+    kind.value = 'quiz'
     questions.value = []
     currentIdx.value = 0
     answers.value = {}
@@ -54,6 +56,7 @@ export const useQuizStore = defineStore('quiz', () => {
   return {
     bankId,
     bankName,
+    kind,
     questions,
     currentIdx,
     answers,

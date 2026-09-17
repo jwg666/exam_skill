@@ -28,7 +28,13 @@ export default defineEventHandler(async (event) => {
         try { ans = JSON.parse(q.answer_multi || '[]') } catch { ans = [] }
       }
       if (type === 'judge') ans = q.answer_index
-      return { id: q.id, type, q: q.content, opts, ans, exp: q.explanation }
+      const item: any = { id: q.id, type, q: q.content, opts, ans, exp: q.explanation }
+      // 测评类题库由服务端判分出报告，不下发答案与解析防止作弊
+      if (bank.kind === 'assessment') {
+        delete item.ans
+        delete item.exp
+      }
+      return item
     })
   }
 })

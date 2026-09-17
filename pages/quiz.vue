@@ -16,6 +16,10 @@ if (!quizStore.bankId || quizStore.questions.length === 0) {
 const q = computed(() => quizStore.questions[quizStore.currentIdx])
 const qType = computed(() => q.value?.type || 'single')
 const typeLabel = computed(() => ({ single: '单选', judge: '判断', multi: '多选' })[qType.value] || '单选')
+const headerLabel = computed(() => {
+  if (quizStore.kind === 'assessment') return quizStore.bankId === 'mbti' ? '人格测评' : '智商测评'
+  return quizStore.mode === 'exam' ? '模拟考试' : '自由练习'
+})
 const isFav = computed(() => appStore.favorites.some(f => f.questionId === q.value?.id))
 const isFlagged = computed(() => !!quizStore.flags[quizStore.currentIdx])
 const isMulti = computed(() => qType.value === 'multi')
@@ -149,48 +153,55 @@ const finishQuiz = async () => {
 
   quizStore.elapsed = Math.floor((Date.now() - quizStore.startTime) / 1000)
 
+  // 原始作答数组（按题目顺序，未答为 -1），服务端统一判分
+  const answers: any[] = quizStore.questions.map((_, i) => {
+    const a = quizStore.answers[i]
+    if (a === undefined) return -1
+    return a
+  })
+
   let correct = 0
   const wrongQuestions: number[] = []
-  for (let i = 0; i < total; i++) {
-    if (quizStore.isCorrectAt(i)) {
-      correct++
-    } else {
-      wrongQuestions.push(quizStore.questions[i].id)
-    }
+  if (quizStore.kind !== 'assessment') {
+    quizStore.questions.forEach((q, i) => {
+      if (quizStore.isCorrectAt(i)) correct++
+      else wrongQuestions.push(q.id)
+    })
   }
   const score = Math.round((correct / total) * 100) || 0
-
-  quizStore.result = {
-    bankId: quizStore.bankId,
-    bankName: quizStore.bankName,
-    mode: quizStore.mode,
-    total,
-    correct,
-    wrong: total - correct,
-    score,
-    elapsed: quizStore.elapsed
-  }
 
   try {
     const res = await $api<any>('/api/quiz/submit', {
       method: 'POST',
       body: {
         bankId: quizStore.bankId,
-        total,
-        correct,
         timeSpent: quizStore.elapsed,
-        wrongQuestions
+        answers
       }
     })
     appStore.toastAchievements(res.newlyUnlocked || [])
-    // 本地总量即时更新（下次登录以服务端为准）
-    if (appStore.user) {
+    const report = res.report
+    const countsForStats = report ? report.kind === 'iq' : true
+    if (appStore.user && countsForStats) {
       appStore.user.totalAnswered = (appStore.user.totalAnswered || 0) + total
       appStore.user.totalCorrect = (appStore.user.totalCorrect || 0) + correct
     }
+    quizStore.result = {
+      bankId: quizStore.bankId,
+      bankName: quizStore.bankName,
+      mode: quizStore.mode,
+      kind: quizStore.kind,
+      total,
+      correct: countsForStats ? correct : 0,
+      wrong: countsForStats ? total - correct : 0,
+      score: report ? (report.kind === 'iq' ? report.iq : 100) : score,
+      elapsed: quizStore.elapsed,
+      report: report || null
+    }
   } catch (e) {
     console.error('Submit to server failed', e)
-    $toast.error('成绩上传失败，已本地记录')
+    $toast.error('提交失败，请重试')
+    return
   }
 
   router.push('/result')
@@ -219,7 +230,7 @@ const jumpTo = (i: number) => {
           <i class="fas fa-times"></i>
         </div>
         <div class="flex flex-col">
-          <span class="text-xs text-[#94A3B8] font-medium tracking-wide uppercase">{{ quizStore.mode === 'exam' ? '模拟考试' : '自由练习' }}</span>
+          <span class="text-xs text-[#94A3B8] font-medium tracking-wide uppercase">{{ headerLabel }}</span>
           <span class="text-base font-bold">{{ quizStore.currentIdx + 1 }} <span class="text-[#64748B] text-sm">/ {{ quizStore.questions.length }}</span></span>
         </div>
       </div>
@@ -283,7 +294,7 @@ const jumpTo = (i: number) => {
     <!-- 底部操作栏 -->
     <div class="fixed bottom-0 left-0 right-0 p-4 bg-[#0B1120]/90 backdrop-blur-xl border-t border-[#243049] flex items-center gap-3 z-20 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
       <div class="flex gap-2">
-        <button class="w-12 h-12 rounded-xl bg-[#162032] flex items-center justify-center text-[#94A3B8] hover:bg-[#1C2942] hover:text-white transition-colors border border-[#243049]" @click="toggleFav">
+        <button v-if="quizStore.kind !== 'assessment'" class="w-12 h-12 rounded-xl bg-[#162032] flex items-center justify-center text-[#94A3B8] hover:bg-[#1C2942] hover:text-white transition-colors border border-[#243049]" @click="toggleFav">
           <i class="fas fa-star" :class="isFav ? 'text-amber-400' : ''"></i>
         </button>
         <button class="w-12 h-12 rounded-xl bg-[#162032] flex items-center justify-center text-[#94A3B8] hover:bg-[#1C2942] hover:text-white transition-colors border border-[#243049]" @click="toggleFlag">

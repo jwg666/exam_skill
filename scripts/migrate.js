@@ -173,6 +173,20 @@ const steps = [
     }
   },
   {
+    name: '列补齐：banks.kind / questions.meta / histories.report（测评支持）',
+    async up(conn) {
+      if (!(await columnExists(conn, 'banks', 'kind'))) {
+        await conn.query("ALTER TABLE `banks` ADD COLUMN `kind` VARCHAR(10) NOT NULL DEFAULT 'quiz' AFTER `id`");
+      }
+      if (!(await columnExists(conn, 'questions', 'meta'))) {
+        await conn.query('ALTER TABLE `questions` ADD COLUMN `meta` TEXT NULL AFTER `explanation`');
+      }
+      if (!(await columnExists(conn, 'histories', 'report'))) {
+        await conn.query('ALTER TABLE `histories` ADD COLUMN `report` TEXT NULL AFTER `accuracy`');
+      }
+    }
+  },
+  {
     name: '题库分类表初始化（默认五类，幂等）',
     async up(conn) {
       const defaults = [

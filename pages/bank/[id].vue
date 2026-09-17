@@ -18,16 +18,23 @@ if (!bank.value) {
 const loadingRandom = ref(false)
 const loadingWrong = ref(false)
 
-const startQuiz = (mode: 'practice' | 'exam', questions: any[], startIndex = 0, name?: string) => {
+const startQuiz = (mode: 'practice' | 'exam', questions: any[], startIndex = 0, name?: string, kind: 'quiz' | 'assessment' = 'quiz') => {
   if (!questions.length) return
   quizStore.resetQuiz()
   quizStore.bankId = bankId
   quizStore.bankName = name || bank.value?.name || ''
+  quizStore.kind = kind
   quizStore.mode = mode
   quizStore.questions = questions
   quizStore.currentIdx = startIndex
   quizStore.startTime = Date.now()
   router.push('/quiz')
+}
+
+const isAssessment = computed(() => bank.value?.kind === 'assessment')
+
+const startAssessment = () => {
+  startQuiz('exam', bank.value?.questions || [], 0, bank.value?.name || '', 'assessment')
 }
 
 const startPractice = () => {
@@ -112,7 +119,13 @@ const isDone = (i: number) => i < progress.value
       </div>
 
       <!-- 操作按钮 -->
-      <div class="grid grid-cols-3 gap-3 mt-6 fade-up" style="animation-delay:0.1s">
+      <div v-if="isAssessment" class="mt-6 fade-up" style="animation-delay:0.1s">
+        <button class="g-btn g-btn-primary w-full py-4 text-base shadow-[0_8px_25px_rgba(139,92,246,0.4)]" @click="startAssessment">
+          <i class="fas fa-play text-sm"></i> 开始测评（{{ bank.questions.length }} 题）
+        </button>
+        <p class="text-xs text-[#64748B] text-center mt-3">按直觉作答即可，完成后将生成专属{{ bankId === 'mbti' ? '人格' : '智商' }}测评报告</p>
+      </div>
+      <div v-else class="grid grid-cols-3 gap-3 mt-6 fade-up" style="animation-delay:0.1s">
         <button class="g-btn g-btn-primary shadow-[0_8px_25px_rgba(13,148,136,0.4)]" @click="startPractice">
           <i class="fas fa-play text-sm"></i> 继续练习
         </button>
@@ -130,7 +143,7 @@ const isDone = (i: number) => i < progress.value
           <i class="fas fa-list-ul text-[#14B8A6]"></i> 题目列表
         </h3>
         <div class="space-y-3">
-          <div v-for="(q, i) in bank.questions" :key="i" class="g-card p-3 flex items-center gap-3 cursor-pointer transition-all hover:border-[#0D9488]/50" :style="{ opacity: isDone(i) ? 0.7 : 1 }" @click="startQuizRoute('practice', i)">
+          <div v-for="(q, i) in bank.questions" :key="i" class="g-card p-3 flex items-center gap-3 cursor-pointer transition-all hover:border-[#0D9488]/50" :style="{ opacity: isDone(i) ? 0.7 : 1 }" @click="isAssessment ? startAssessment() : startQuiz('practice', bank.questions, i)">
             <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 transition-colors" :class="isDone(i) ? 'bg-[#0D9488] text-white' : 'bg-[#1C2942] text-[#64748B]'">
               {{ i + 1 }}
             </div>
