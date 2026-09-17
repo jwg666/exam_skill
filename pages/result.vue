@@ -116,105 +116,13 @@ const formatTime = (seconds: number) => {
       </div>
 
       <!-- MBTI 报告 -->
-      <div v-if="isMbti" class="relative z-10 fade-up space-y-4 px-1 text-left">
-        <div class="g-card p-6">
-          <div class="flex items-center gap-4 mb-4">
-            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-lg">
-              <i class="fas fa-theater-masks text-white text-xl"></i>
-            </div>
-            <div>
-              <h3 class="text-xl font-black">{{ report.typeName }} <span class="text-[#94A3B8] text-sm font-mono">{{ report.typeCode }}</span></h3>
-              <p class="text-xs text-[#94A3B8] mt-0.5">{{ report.tagline }}</p>
-            </div>
-          </div>
-
-          <div class="space-y-3 mb-5">
-            <div v-for="d in report.dims" :key="d.dim">
-              <div class="flex justify-between text-xs font-bold mb-1">
-                <span class="text-teal-400">{{ d.left }} {{ d.leftPct }}%</span>
-                <span class="text-[#64748B]">{{ d.label }}</span>
-                <span class="text-blue-400">{{ d.rightPct }}% {{ d.right }}</span>
-              </div>
-              <div class="flex h-2 rounded-full overflow-hidden bg-[#0B1120]">
-                <div class="bg-gradient-to-r from-teal-500 to-teal-400" :style="{ width: d.leftPct + '%' }"></div>
-                <div class="bg-gradient-to-r from-blue-500 to-blue-400 flex-1"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap gap-2 mb-5">
-            <span v-for="t in report.traits" :key="t" class="g-tag bg-purple-500/20 text-purple-300 text-xs px-2.5 py-1">{{ t }}</span>
-          </div>
-
-          <div class="grid grid-cols-1 gap-4 text-sm">
-            <div>
-              <p class="font-bold text-emerald-400 mb-1.5 text-xs"><i class="fas fa-thumbs-up mr-1"></i>优势</p>
-              <ul class="space-y-1 text-[#94A3B8] text-xs leading-relaxed">
-                <li v-for="s in report.strengths" :key="s" class="flex gap-1.5"><span class="text-emerald-500">·</span>{{ s }}</li>
-              </ul>
-            </div>
-            <div>
-              <p class="font-bold text-orange-400 mb-1.5 text-xs"><i class="fas fa-exclamation-triangle mr-1"></i>盲点</p>
-              <ul class="space-y-1 text-[#94A3B8] text-xs leading-relaxed">
-                <li v-for="w in report.weaknesses" :key="w" class="flex gap-1.5"><span class="text-orange-500">·</span>{{ w }}</li>
-              </ul>
-            </div>
-            <div>
-              <p class="font-bold text-blue-400 mb-1.5 text-xs"><i class="fas fa-briefcase mr-1"></i>适合的发展方向</p>
-              <p class="text-[#94A3B8] text-xs leading-relaxed">{{ report.careers.join(' · ') }}</p>
-            </div>
-            <div>
-              <p class="font-bold text-pink-400 mb-1.5 text-xs"><i class="fas fa-heart mr-1"></i>高契合类型</p>
-              <p class="text-[#94A3B8] text-xs leading-relaxed">{{ report.compatible.join(' · ') }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="g-card p-4 text-xs text-[#64748B] leading-relaxed">
-          <i class="fas fa-info-circle text-[#14B8A6] mr-1"></i>{{ report.note }}
-        </div>
+      <div v-if="isMbti" class="relative z-10 fade-up px-1 text-left">
+        <ReportMbti :report="report" />
       </div>
 
       <!-- IQ 报告 -->
-      <div v-else-if="isIq" class="relative z-10 fade-up space-y-4 px-1 text-left">
-        <div class="g-card p-6">
-          <div class="flex items-center justify-between mb-5">
-            <div>
-              <h3 class="text-xl font-black" :style="{ color: report.tierColor }">{{ report.tier }}</h3>
-              <p class="text-xs text-[#94A3B8] mt-0.5">{{ report.percentile }}</p>
-            </div>
-            <i class="fas fa-brain text-3xl" :style="{ color: report.tierColor }"></i>
-          </div>
-
-          <p class="text-xs font-bold text-[#94A3B8] mb-3"><i class="fas fa-chart-bar text-[#14B8A6] mr-1"></i>能力维度分析</p>
-          <div class="space-y-3 mb-5">
-            <div v-for="c in report.byCat" :key="c.cat">
-              <div class="flex justify-between text-xs font-bold mb-1">
-                <span>{{ c.cat }}</span>
-                <span :class="c.pct >= 80 ? 'text-emerald-400' : c.pct >= 50 ? 'text-blue-400' : 'text-orange-400'">
-                  {{ c.correct }}/{{ c.total }} · {{ c.pct }}%
-                </span>
-              </div>
-              <div class="progress-bar bg-[#0B1120]">
-                <div class="progress-fill" :style="{ width: c.pct + '%' }"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3 text-xs">
-            <div class="bg-[#0B1120]/60 rounded-xl p-3 border border-[#243049]">
-              <p class="text-emerald-400 font-bold mb-0.5"><i class="fas fa-trophy mr-1"></i>最强维度</p>
-              <p class="text-[#94A3B8]">{{ report.bestCat }}</p>
-            </div>
-            <div class="bg-[#0B1120]/60 rounded-xl p-3 border border-[#243049]">
-              <p class="text-orange-400 font-bold mb-0.5"><i class="fas fa-dumbbell mr-1"></i>可提升</p>
-              <p class="text-[#94A3B8]">{{ report.worstCat }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="g-card p-4 text-xs text-[#64748B] leading-relaxed">
-          <i class="fas fa-info-circle text-[#14B8A6] mr-1"></i>
-          本测试为娱乐与自我认知参考，不构成临床或专业鉴定。分数受状态、环境与题目熟悉度影响，建议休息充分后多次测试取参考。
-        </div>
+      <div v-else-if="isIq" class="relative z-10 fade-up px-1 text-left">
+        <ReportIq :report="report" />
       </div>
 
       <div class="flex gap-4 relative z-10 fade-up px-5 mt-8" style="animation-delay: 0.2s">

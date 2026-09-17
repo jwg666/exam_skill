@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import { useAppStore } from '~/stores/app'
-import { storeToRefs } from 'pinia'
-
 const route = useRoute()
-const appStore = useAppStore()
-const { wrongBook } = storeToRefs(appStore)
 
 const isActive = (path: string) => {
   return route.path === path
@@ -18,10 +13,9 @@ const isActive = (path: string) => {
         <i class="fas fa-home text-xl transition-transform duration-300"></i>
         <span class="text-[10px] font-medium">首页</span>
       </NuxtLink>
-      <NuxtLink to="/wrong" class="flex-1 flex flex-col items-center py-2 gap-0.5 cursor-pointer transition-all duration-300 text-[#64748B] relative no-underline nav-item" :class="{ 'active': isActive('/wrong') }">
-        <i class="fas fa-times-circle text-xl transition-transform duration-300"></i>
-        <span class="text-[10px] font-medium">错题</span>
-        <span v-if="wrongBook.length > 0" class="absolute -top-1 ml-4 min-w-[16px] h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold px-1">{{ wrongBook.length }}</span>
+      <NuxtLink to="/results" class="flex-1 flex flex-col items-center py-2 gap-0.5 cursor-pointer transition-all duration-300 text-[#64748B] relative no-underline nav-item" :class="{ 'active': isActive('/results') }">
+        <i class="fas fa-medal text-xl transition-transform duration-300"></i>
+        <span class="text-[10px] font-medium">成果</span>
       </NuxtLink>
       <NuxtLink to="/profile" class="flex-1 flex flex-col items-center py-2 gap-0.5 cursor-pointer transition-all duration-300 text-[#64748B] relative no-underline nav-item" :class="{ 'active': isActive('/profile') }">
         <i class="fas fa-user text-xl transition-transform duration-300"></i>
