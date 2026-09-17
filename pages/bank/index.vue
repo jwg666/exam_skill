@@ -7,6 +7,13 @@ const searchQuery = ref('')
 const currentBankCategory = useStorage('quizApp_currentBankCategory', 'all')
 
 const { data: questionBanks } = await useFetch<any[]>('/api/banks')
+const { data: serverCategories } = await useFetch<any[]>('/api/categories')
+
+// 「全部」+ 服务端分类（管理后台可维护）
+const categories = computed(() => [
+  { code: 'all', name: '全部' },
+  ...(serverCategories.value || []).map(c => ({ code: c.code, name: c.name }))
+])
 
 const filteredBanks = computed(() => {
   let banks = questionBanks.value || []
@@ -22,15 +29,6 @@ const filteredBanks = computed(() => {
   }
   return banks
 })
-
-const categories = [
-  { key: 'all', name: '全部' },
-  { key: 'exam', name: '考试类' },
-  { key: 'skill', name: '技能类' },
-  { key: 'license', name: '资格类' },
-  { key: 'language', name: '语言类' },
-  { key: 'interest', name: '兴趣类' }
-]
 
 const setCategory = (cat: string) => {
   currentBankCategory.value = cat
@@ -59,15 +57,13 @@ const setCategory = (cat: string) => {
     <!-- 分类标签 -->
     <div class="scroll-x px-5 pb-3">
       <div class="flex gap-2">
-        <button 
-          v-for="cat in categories" 
-          :key="cat.key"
+        <button
+          v-for="cat in categories"
+          :key="cat.code"
           class="g-tag cursor-pointer border-none px-3.5 py-1.5"
-          :class="currentBankCategory === cat.key ? 'bg-[var(--accent)] text-white' : 'bg-[var(--card)] text-[var(--fg2)]'"
-          @click="setCategory(cat.key)"
-        >
-          {{ cat.name }}
-        </button>
+          :class="currentBankCategory === cat.code ? 'bg-[var(--accent)] text-white' : 'bg-[var(--card)] text-[var(--fg2)]'"
+          @click="setCategory(cat.code)"
+        >{{ cat.name }}</button>
       </div>
     </div>
 

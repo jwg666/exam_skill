@@ -126,6 +126,14 @@ CREATE TABLE IF NOT EXISTS \`notifications\` (
   FOREIGN KEY (\`user_id\`) REFERENCES \`users\`(\`id\`) ON DELETE CASCADE,
   KEY \`idx_user_read\` (\`user_id\`, \`is_read\`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS \`bank_categories\` (
+  \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+  \`code\` VARCHAR(20) NOT NULL UNIQUE,
+  \`name\` VARCHAR(20) NOT NULL,
+  \`sort\` INT DEFAULT 0,
+  \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 `;
 
 async function columnExists(conn, table, column) {
@@ -161,6 +169,21 @@ const steps = [
       }
       if (!(await columnExists(conn, 'questions', 'answer_multi'))) {
         await conn.query('ALTER TABLE `questions` ADD COLUMN `answer_multi` TEXT NULL AFTER `answer_index`');
+      }
+    }
+  },
+  {
+    name: '题库分类表初始化（默认五类，幂等）',
+    async up(conn) {
+      const defaults = [
+        ['exam', '考试类', 1],
+        ['skill', '技能类', 2],
+        ['license', '资格类', 3],
+        ['language', '语言类', 4],
+        ['interest', '兴趣类', 5]
+      ];
+      for (const [code, name, sort] of defaults) {
+        await conn.execute('INSERT IGNORE INTO bank_categories (code, name, sort) VALUES (?, ?, ?)', [code, name, sort]);
       }
     }
   },

@@ -11,6 +11,13 @@ if (!appStore.user?.isAdmin) {
 
 const banks = ref<any[]>([])
 const loading = ref(true)
+const categories = ref<any[]>([])
+
+const loadCategories = async () => {
+  try {
+    categories.value = await $api<any[]>('/api/categories')
+  } catch { /* 分类加载失败不阻塞页面 */ }
+}
 
 const loadBanks = async () => {
   try {
@@ -21,20 +28,64 @@ const loadBanks = async () => {
     loading.value = false
   }
 }
-onMounted(loadBanks)
+onMounted(() => {
+  loadBanks()
+  loadCategories()
+})
 
 // 新建题库
 const showCreate = ref(false)
-const newBank = ref({ id: '', name: '', type: 'exam', typeName: '考试类', difficulty: '中等', description: '' })
+const newBank = ref({ id: '', name: '', type: '', typeName: '', difficulty: '中等', description: '' })
+const onBankTypeChange = () => {
+  const cat = categories.value.find(c => c.code === newBank.value.type)
+  newBank.value.typeName = cat?.name || newBank.value.type
+}
 const createBank = async () => {
   try {
     await $api('/api/admin/banks', { method: 'POST', body: newBank.value })
     $toast.success('题库已创建')
     showCreate.value = false
-    newBank.value = { id: '', name: '', type: 'exam', typeName: '考试类', difficulty: '中等', description: '' }
+    newBank.value = { id: '', name: '', type: '', typeName: '', difficulty: '中等', description: '' }
     await loadBanks()
   } catch (e: any) {
     $toast.error(e?.data?.message || '创建失败')
+  }
+}
+
+// 分类维护
+const showCategories = ref(false)
+const newCat = ref({ code: '', name: '', sort: 0 })
+const openCategories = () => {
+  showCategories.value = true
+  loadCategories()
+}
+const createCategory = async () => {
+  try {
+    await $api('/api/admin/categories', { method: 'POST', body: newCat.value })
+    $toast.success('分类已创建')
+    newCat.value = { code: '', name: '', sort: 0 }
+    await loadCategories()
+  } catch (e: any) {
+    $toast.error(e?.data?.message || '创建失败')
+  }
+}
+const saveCategory = async (c: any) => {
+  try {
+    await $api(`/api/admin/categories/${c.id}`, { method: 'PUT', body: { name: c.name, sort: c.sort } })
+    $toast.success('分类已保存')
+    await loadCategories()
+  } catch (e: any) {
+    $toast.error(e?.data?.message || '保存失败')
+  }
+}
+const deleteCategory = async (c: any) => {
+  if (!confirm(`确定删除分类「${c.name}」？`)) return
+  try {
+    await $api(`/api/admin/categories/${c.id}`, { method: 'DELETE' })
+    $toast.success('已删除')
+    await loadCategories()
+  } catch (e: any) {
+    $toast.error(e?.data?.message || '删除失败')
   }
 }
 
@@ -147,9 +198,14 @@ const saveQuestion = async () => {
         </div>
         <h1 class="text-xl font-bold tracking-tight">题库管理</h1>
       </div>
-      <button class="text-sm font-bold text-teal-400 hover:text-teal-300" @click="showCreate = true">
-        <i class="fas fa-plus mr-1"></i>新建
-      </button>
+      <div class="flex gap-3">
+        <button class="text-sm font-bold text-[#94A3B8] hover:text-teal-400 transition-colors" @click="openCategories">
+          <i class="fas fa-tags mr-1"></i>分类
+        </button>
+        <button class="text-sm font-bold text-teal-400 hover:text-teal-300" @click="showCreate = true">
+          <i class="fas fa-plus mr-1"></i>新建
+        </button>
+      </div>
     </div>
 
     <div v-if="loading" class="text-center py-20 text-[#94A3B8]">
@@ -186,12 +242,9 @@ const saveQuestion = async () => {
           <input v-model="newBank.id" class="g-input" placeholder="题库 ID（小写字母/数字，如 vue3）">
           <input v-model="newBank.name" class="g-input" placeholder="题库名称">
           <div class="grid grid-cols-2 gap-3">
-            <select v-model="newBank.type" class="g-input" @change="newBank.typeName = { exam: '考试类', skill: '技能类', license: '资格类', language: '语言类', interest: '兴趣类' }[newBank.type] || '考试类'">
-              <option value="exam">考试类</option>
-              <option value="skill">技能类</option>
-              <option value="license">资格类</option>
-              <option value="language">语言类</option>
-              <option value="interest">兴趣类</option>
+            <select v-model="newBank.type" class="g-input" @change="onBankTypeChange">
+              <option value="" disabled>选择分类</option>
+              <option v-for="cat in categories" :key="cat.code" :value="cat.code">{{ cat.name }}</option>
             </select>
             <select v-model="newBank.difficulty" class="g-input">
               <option>简单</option>
@@ -266,6 +319,40 @@ const saveQuestion = async () => {
             <button class="g-btn g-btn-primary flex-1" @click="saveQuestion">保存题目</button>
           </div>
         </div>
+      </div>
+    </div>
+    <!-- 分类维护弹层 -->
+    <div v-if="showCategories" class="modal-overlay z-[60]" @click.self="showCategories = false">
+      <div class="modal-content max-h-[80vh] overflow-y-auto">
+        <h3 class="text-lg font-bold mb-4">分类管理</h3>
+
+        <!-- 分类列表 -->
+        <div class="space-y-2 mb-5">
+          <div v-for="c in categories" :key="c.id" class="bg-[#0B1120]/60 border border-[#243049] rounded-xl p-3 flex items-center gap-2">
+            <span class="text-[10px] text-[#64748B] font-mono w-20 shrink-0 truncate" :title="c.code">{{ c.code }}</span>
+            <input v-model="c.name" class="g-input h-9 flex-1 text-sm" maxlength="20" placeholder="分类名称">
+            <input v-model.number="c.sort" type="number" class="g-input h-9 w-16 text-sm" placeholder="排序">
+            <button class="g-btn g-btn-primary px-3 py-1.5 text-xs shrink-0" @click="saveCategory(c)">保存</button>
+            <button class="w-8 h-8 rounded-lg bg-[#162032] flex items-center justify-center text-[#64748B] hover:bg-red-500/20 hover:text-red-400 transition-colors shrink-0" @click="deleteCategory(c)">
+              <i class="fas fa-trash-alt text-xs"></i>
+            </button>
+          </div>
+          <div v-if="categories.length === 0" class="text-center py-6 text-sm text-[#64748B]">暂无分类</div>
+        </div>
+
+        <!-- 新增分类 -->
+        <div class="border-t border-[#243049] pt-4">
+          <p class="text-xs text-[#94A3B8] font-bold mb-2">新增分类</p>
+          <div class="flex gap-2">
+            <input v-model="newCat.code" class="g-input h-9 flex-1 text-sm" placeholder="编码（如 music）">
+            <input v-model="newCat.name" class="g-input h-9 flex-1 text-sm" placeholder="名称（如 音乐类）">
+            <input v-model.number="newCat.sort" type="number" class="g-input h-9 w-16 text-sm" placeholder="排序">
+            <button class="g-btn g-btn-primary px-4 py-1.5 text-sm shrink-0" @click="createCategory">添加</button>
+          </div>
+          <p class="text-[10px] text-[#64748B] mt-2">编码创建后不可修改；有题库的分类无法删除</p>
+        </div>
+
+        <button class="g-btn g-btn-ghost w-full mt-4 bg-[#162032] border-[#243049]" @click="showCategories = false">完成</button>
       </div>
     </div>
   </div>

@@ -262,6 +262,34 @@ try {
   r = await api('/api/admin/banks/vue3', { method: 'DELETE' }, adminToken)
   check('管理员删除题库', r.status === 200)
 
+  // ---- 分类管理 ----
+  r = await api('/api/categories')
+  check('分类接口返回默认五类', r.status === 200 && r.body.length === 5, `got ${r.body?.length}`)
+
+  // B 账号始终为普通用户，用于验证权限拦截（A 在后续环节会被提升为管理员）
+  r = await api('/api/admin/categories', { method: 'POST', body: JSON.stringify({ code: 'music', name: '音乐类', sort: 6 }) }, adminTokenUnused)
+  check('非管理员新建分类 403', r.status === 403)
+
+  r = await api('/api/admin/categories', { method: 'POST', body: JSON.stringify({ code: 'music', name: '音乐类', sort: 6 }) }, adminToken)
+  check('管理员新建分类', r.status === 200)
+
+  r = await api('/api/admin/categories', { method: 'POST', body: JSON.stringify({ code: 'music', name: '重复', sort: 6 }) }, adminToken)
+  check('重复分类编码 409', r.status === 409)
+
+  const musicCat = (await (await api('/api/categories')).body).find((c) => c.code === 'music')
+  r = await api(`/api/admin/categories/${musicCat.id}`, { method: 'PUT', body: JSON.stringify({ name: '音乐大类', sort: 9 }) }, adminToken)
+  const catsAfterRename = await (await api('/api/categories')).body
+  check('修改分类名称与排序', r.status === 200 && catsAfterRename.find((c) => c.code === 'music')?.name === '音乐大类')
+
+  const examCat = catsAfterRename.find((c) => c.code === 'exam')
+  r = await api(`/api/admin/categories/${examCat.id}`, { method: 'DELETE' }, adminToken)
+  check('删除被题库引用的分类 409', r.status === 409)
+
+  r = await api(`/api/admin/categories/${musicCat.id}`, { method: 'DELETE' }, adminToken)
+  check('删除未使用分类成功', r.status === 200)
+  r = await api('/api/categories')
+  check('删除后分类数恢复五类', r.body.length === 5)
+
   // ---- 页面渲染抽查 ----
   for (const p of ['/', '/login', '/bank', '/stats', '/achievements', '/notifications', '/profile', '/wrong', '/favorites', '/history', '/admin']) {
     const res = await fetch(base + p, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
