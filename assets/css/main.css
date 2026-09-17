@@ -114,6 +114,9 @@ body {
 .g-input.g-input-icon { padding-left: 44px; }
 .g-input.g-input-icon-r { padding-right: 44px; }
 
+/* 题库分类大按钮：双类选择器提高优先级，尺寸大于默认 g-tag */
+.g-tag.cat-tag { padding: 11px 8px; font-size: 14px; font-weight: 600; border-radius: 10px; }
+
 /* 标签 */
 .g-tag {
     display:inline-flex; align-items:center; gap:4px;

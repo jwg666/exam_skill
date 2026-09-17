@@ -56,7 +56,7 @@ const setCategory = (cat: string) => {
         <button
           v-for="cat in categories"
           :key="cat.code"
-          class="g-tag cursor-pointer border-none px-2 py-1.5 w-full justify-center truncate"
+          class="g-tag cat-tag cursor-pointer border-none w-full justify-center truncate"
           :class="currentBankCategory === cat.code ? 'bg-[var(--accent)] text-white' : 'bg-[var(--card)] text-[var(--fg2)]'"
           @click="setCategory(cat.code)"
         >{{ cat.name }}</button>
