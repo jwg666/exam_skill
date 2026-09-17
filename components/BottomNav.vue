@@ -18,10 +18,6 @@ const isActive = (path: string) => {
         <i class="fas fa-home text-xl transition-transform duration-300"></i>
         <span class="text-[10px] font-medium">首页</span>
       </NuxtLink>
-      <NuxtLink to="/bank" class="flex-1 flex flex-col items-center py-2 gap-0.5 cursor-pointer transition-all duration-300 text-[#64748B] relative no-underline nav-item" :class="{ 'active': isActive('/bank') }">
-        <i class="fas fa-book text-xl transition-transform duration-300"></i>
-        <span class="text-[10px] font-medium">题库</span>
-      </NuxtLink>
       <NuxtLink to="/wrong" class="flex-1 flex flex-col items-center py-2 gap-0.5 cursor-pointer transition-all duration-300 text-[#64748B] relative no-underline nav-item" :class="{ 'active': isActive('/wrong') }">
         <i class="fas fa-times-circle text-xl transition-transform duration-300"></i>
         <span class="text-[10px] font-medium">错题</span>
