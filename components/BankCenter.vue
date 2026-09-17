@@ -50,13 +50,13 @@ const setCategory = (cat: string) => {
       </div>
     </div>
 
-    <!-- 分类标签 -->
-    <div class="scroll-x px-5 pb-3">
-      <div class="flex gap-2">
+    <!-- 分类标签：每行最多 4 个 -->
+    <div class="px-5 pb-3">
+      <div class="grid grid-cols-4 gap-2">
         <button
           v-for="cat in categories"
           :key="cat.code"
-          class="g-tag cursor-pointer border-none px-3.5 py-1.5"
+          class="g-tag cursor-pointer border-none px-2 py-1.5 w-full justify-center truncate"
           :class="currentBankCategory === cat.code ? 'bg-[var(--accent)] text-white' : 'bg-[var(--card)] text-[var(--fg2)]'"
           @click="setCategory(cat.code)"
         >{{ cat.name }}</button>
