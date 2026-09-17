@@ -160,7 +160,7 @@ const toggleMode = () => {
               v-model="phone"
               type="tel"
               placeholder="请输入手机号"
-              class="g-input pl-11 bg-[#0B1120]/50"
+              class="g-input g-input-icon bg-[#0B1120]/50"
               @keyup.enter="handleLogin"
             >
           </div>
@@ -172,7 +172,7 @@ const toggleMode = () => {
               v-model="password"
               :type="isPasswordVisible ? 'text' : 'password'"
               placeholder="请输入密码"
-              class="g-input pl-11 pr-11 bg-[#0B1120]/50"
+              class="g-input g-input-icon g-input-icon-r bg-[#0B1120]/50"
               @keyup.enter="handleLogin"
             >
             <button
@@ -193,7 +193,7 @@ const toggleMode = () => {
                 maxlength="6"
                 inputmode="numeric"
                 placeholder="请输入验证码"
-                class="g-input pl-11 bg-[#0B1120]/50"
+                class="g-input g-input-icon bg-[#0B1120]/50"
                 @keyup.enter="handleLogin"
               >
             </div>
@@ -222,7 +222,7 @@ const toggleMode = () => {
               type="text"
               maxlength="20"
               placeholder="昵称（选填，默认使用手机号）"
-              class="g-input pl-11 bg-[#0B1120]/50"
+              class="g-input g-input-icon bg-[#0B1120]/50"
             >
           </div>
 
@@ -232,7 +232,7 @@ const toggleMode = () => {
               v-model="phone"
               type="tel"
               placeholder="请输入手机号"
-              class="g-input pl-11 bg-[#0B1120]/50"
+              class="g-input g-input-icon bg-[#0B1120]/50"
             >
           </div>
 
@@ -245,7 +245,7 @@ const toggleMode = () => {
                 maxlength="6"
                 inputmode="numeric"
                 placeholder="请输入验证码"
-                class="g-input pl-11 bg-[#0B1120]/50"
+                class="g-input g-input-icon bg-[#0B1120]/50"
                 @keyup.enter="handleRegister"
               >
             </div>

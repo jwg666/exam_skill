@@ -110,6 +110,10 @@ body {
 }
 .g-input::placeholder { color: var(--muted); }
 
+/* 带前置/后置图标的输入框：双类选择器提高优先级，避免被 .g-input 的 padding 覆盖 */
+.g-input.g-input-icon { padding-left: 44px; }
+.g-input.g-input-icon-r { padding-right: 44px; }
+
 /* 标签 */
 .g-tag {
     display:inline-flex; align-items:center; gap:4px;
