@@ -162,6 +162,26 @@ const steps = [
     }
   },
   {
+    name: '列调整：users.phone 改为可空（微信登录用户先无手机号，绑定后补录）',
+    async up(conn) {
+      const [rows] = await conn.query(
+        'SELECT IS_NULLABLE AS nullable FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+        [config.database, 'users', 'phone']
+      );
+      if (rows[0] && rows[0].nullable === 'NO') {
+        await conn.query('ALTER TABLE `users` MODIFY `phone` VARCHAR(20) NULL');
+      }
+    }
+  },
+  {
+    name: '列补齐：users.openid（微信登录，唯一索引允许多个 NULL）',
+    async up(conn) {
+      if (!(await columnExists(conn, 'users', 'openid'))) {
+        await conn.query('ALTER TABLE `users` ADD COLUMN `openid` VARCHAR(64) NULL, ADD UNIQUE KEY `uniq_user_openid` (`openid`)');
+      }
+    }
+  },
+  {
     name: '列补齐：questions.type / questions.answer_multi（题型扩展）',
     async up(conn) {
       if (!(await columnExists(conn, 'questions', 'type'))) {
