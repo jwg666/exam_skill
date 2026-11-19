@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
 
   const [questions] = await db.query(
     `SELECT id, type, content, options, answer_index, answer_multi, explanation
-     FROM questions WHERE bank_id = ? ORDER BY RAND() LIMIT ?`,
+     FROM questions WHERE bank_id = ? ORDER BY RANDOM() LIMIT ?`,
     [id, n]
   )
 

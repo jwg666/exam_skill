@@ -7,7 +7,7 @@ export async function unlockAchievement(
   achievementId: string
 ): Promise<AchievementDef | null> {
   const [r] = await conn.execute(
-    'INSERT IGNORE INTO user_achievements (user_id, achievement_id) VALUES (?, ?)',
+    'INSERT OR IGNORE INTO user_achievements (user_id, achievement_id) VALUES (?, ?)',
     [userId, achievementId]
   )
   if ((r as any).affectedRows > 0) {

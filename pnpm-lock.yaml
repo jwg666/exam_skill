@@ -11,12 +11,12 @@ importers:
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
-      mysql2:
-        specifier: ^3.22.0
-        version: 3.22.0(@types/node@25.6.0)
+      better-sqlite3:
+        specifier: ^13.1.1
+        version: 13.1.1
       nuxt:
         specifier: ^3.21.2
-        version: 3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(cac@6.7.14)(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3)
+        version: 3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(better-sqlite3@13.1.1)(cac@6.7.14)(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3)
       vue:
         specifier: ^3.5.32
         version: 3.5.32(typescript@6.0.2)
@@ -35,13 +35,13 @@ importers:
         version: 14.2.1(vue@3.5.32(typescript@6.0.2))
       '@vueuse/nuxt':
         specifier: ^14.2.1
-        version: 14.2.1(magicast@0.5.2)(nuxt@3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(cac@6.7.14)(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3))(vue@3.5.32(typescript@6.0.2))
+        version: 14.2.1(magicast@0.5.2)(nuxt@3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(better-sqlite3@13.1.1)(cac@6.7.14)(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3))(vue@3.5.32(typescript@6.0.2))
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
-      mysql-memory-server:
-        specifier: ^1.16.0
-        version: 1.16.0
+      mysql2:
+        specifier: ^3.22.0
+        version: 3.22.0(@types/node@25.6.0)
       pinia:
         specifier: ^3.0.4
         version: 3.0.4(typescript@6.0.2)(vue@3.5.32(typescript@6.0.2))
@@ -1381,10 +1381,6 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  adm-zip@0.6.1:
-    resolution: {integrity: sha512-Xwrja8nx9e5o2N1my4DsKCeKpdrnACyr1wtbPxBDgGzKzKyE9kRtBFA8mWldI+RVlD7CBZNWY/wQ2+ydwOR6kQ==}
-    engines: {node: '>=14.0'}
-
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
@@ -1526,6 +1522,10 @@ packages:
   bcryptjs@3.0.3:
     resolution: {integrity: sha512-GlF5wPWnSa/X5LKM1o0wz0suXIINz1iHRLvTS+sLyi7XPbe5ycmYI3DlZqVGZZtDgl4DmasFg7gOB3JYbphV5g==}
     hasBin: true
+
+  better-sqlite3@13.1.1:
+    resolution: {integrity: sha512-JjyLCATp+VLxZVFyWkicyzKYwpEFLCrV4MmshW97xv3JXdhw5jBDcsbEWRGm2L/96E+k7rtjON8q9nml05h3Pw==}
+    engines: {node: '>=22'}
 
   binary-extensions@2.3.0:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
@@ -2615,11 +2615,6 @@ packages:
   muggle-string@0.4.1:
     resolution: {integrity: sha512-VNTrAak/KhO2i8dqqnqnAHOa3cYBwXEZe9h+D5h/1ZqFSTEFHdM65lR7RoIqq3tBBYavsOXV84NoHXZ0AkPyqQ==}
 
-  mysql-memory-server@1.16.0:
-    resolution: {integrity: sha512-KACSqzKI9Gdq9LEjWrmSx6imlw3s02TWjGGpx8T+ISCvZMJoDXwkk26GxPZ5Vc7axD3E9DQ+Wmc96mEfu+w0UQ==}
-    engines: {bun: '>=1.0.0', node: '>=16.6.0'}
-    hasBin: true
-
   mysql2@3.22.0:
     resolution: {integrity: sha512-4jaJYBObj7FhD3lnZhqX1yDMuZN4mQNz+IolDySDXT7fbozMBpeGQNcuWXKUqo4ahkAEfkjUHPjnwuDI0/6VKw==}
     engines: {node: '>= 8.0'}
@@ -2657,6 +2652,10 @@ packages:
 
   node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
+
+  node-addon-api@8.9.2:
+    resolution: {integrity: sha512-VijLXbi3UACN69I0JVXJsX4tjACjNoQDgv2gTF6sx2wWEi8tkSg2eX8p5gSIFi8z2+DL3oHmY6OyKce38SDolg==}
+    engines: {node: ^18 || ^20 || >= 21}
 
   node-fetch-native@1.6.7:
     resolution: {integrity: sha512-g9yhqoedzIUm0nTnTqAQvueMPVOuIY16bqgAJJC8XOOubYFNwz6IER9qs0Gq2Xd0+CecCKFjtdDTMA4u4xG06Q==}
@@ -3245,11 +3244,6 @@ packages:
 
   semver@7.7.4:
     resolution: {integrity: sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA==}
-    engines: {node: '>=10'}
-    hasBin: true
-
-  semver@7.8.5:
-    resolution: {integrity: sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -4469,7 +4463,7 @@ snapshots:
     transitivePeerDependencies:
       - magicast
 
-  '@nuxt/nitro-server@3.21.2(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(nuxt@3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(cac@6.7.14)(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3))(srvx@0.11.15)(typescript@6.0.2)':
+  '@nuxt/nitro-server@3.21.2(better-sqlite3@13.1.1)(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(nuxt@3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(better-sqlite3@13.1.1)(cac@6.7.14)(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3))(srvx@0.11.15)(typescript@6.0.2)':
     dependencies:
       '@nuxt/devalue': 2.0.2
       '@nuxt/kit': 3.21.2(magicast@0.5.2)
@@ -4486,8 +4480,8 @@ snapshots:
       impound: 1.1.5
       klona: 2.0.6
       mocked-exports: 0.1.1
-      nitropack: 2.13.3(mysql2@3.22.0(@types/node@25.6.0))(srvx@0.11.15)
-      nuxt: 3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(cac@6.7.14)(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3)
+      nitropack: 2.13.3(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0))(srvx@0.11.15)
+      nuxt: 3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(better-sqlite3@13.1.1)(cac@6.7.14)(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3)
       ohash: 2.0.11
       pathe: 2.0.3
       pkg-types: 2.3.0
@@ -4495,7 +4489,7 @@ snapshots:
       std-env: 4.0.0
       ufo: 1.6.3
       unctx: 2.5.0
-      unstorage: 1.17.5(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)
+      unstorage: 1.17.5(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)
       vue: 3.5.32(typescript@6.0.2)
       vue-bundle-renderer: 2.2.0
       vue-devtools-stub: 0.1.0
@@ -4553,7 +4547,7 @@ snapshots:
       rc9: 3.0.1
       std-env: 4.0.0
 
-  '@nuxt/vite-builder@3.21.2(@types/node@25.6.0)(magicast@0.5.2)(nuxt@3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(cac@6.7.14)(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(terser@5.46.1)(typescript@6.0.2)(vue@3.5.32(typescript@6.0.2))(yaml@2.8.3)':
+  '@nuxt/vite-builder@3.21.2(@types/node@25.6.0)(magicast@0.5.2)(nuxt@3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(better-sqlite3@13.1.1)(cac@6.7.14)(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(terser@5.46.1)(typescript@6.0.2)(vue@3.5.32(typescript@6.0.2))(yaml@2.8.3)':
     dependencies:
       '@nuxt/kit': 3.21.2(magicast@0.5.2)
       '@rollup/plugin-replace': 6.0.3(rollup@4.60.1)
@@ -4572,7 +4566,7 @@ snapshots:
       magic-string: 0.30.21
       mlly: 1.8.2
       mocked-exports: 0.1.1
-      nuxt: 3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(cac@6.7.14)(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3)
+      nuxt: 3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(better-sqlite3@13.1.1)(cac@6.7.14)(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3)
       nypm: 0.6.5
       ohash: 2.0.11
       pathe: 2.0.3
@@ -5294,13 +5288,13 @@ snapshots:
 
   '@vueuse/metadata@14.2.1': {}
 
-  '@vueuse/nuxt@14.2.1(magicast@0.5.2)(nuxt@3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(cac@6.7.14)(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3))(vue@3.5.32(typescript@6.0.2))':
+  '@vueuse/nuxt@14.2.1(magicast@0.5.2)(nuxt@3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(better-sqlite3@13.1.1)(cac@6.7.14)(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3))(vue@3.5.32(typescript@6.0.2))':
     dependencies:
       '@nuxt/kit': 4.4.2(magicast@0.5.2)
       '@vueuse/core': 14.2.1(vue@3.5.32(typescript@6.0.2))
       '@vueuse/metadata': 14.2.1
       local-pkg: 1.1.2
-      nuxt: 3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(cac@6.7.14)(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3)
+      nuxt: 3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(better-sqlite3@13.1.1)(cac@6.7.14)(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3)
       vue: 3.5.32(typescript@6.0.2)
     transitivePeerDependencies:
       - magicast
@@ -5325,8 +5319,6 @@ snapshots:
       acorn: 8.16.0
 
   acorn@8.16.0: {}
-
-  adm-zip@0.6.1: {}
 
   agent-base@7.1.4: {}
 
@@ -5447,6 +5439,10 @@ snapshots:
   baseline-browser-mapping@2.10.19: {}
 
   bcryptjs@3.0.3: {}
+
+  better-sqlite3@13.1.1:
+    dependencies:
+      node-addon-api: 8.9.2
 
   binary-extensions@2.3.0: {}
 
@@ -5750,8 +5746,9 @@ snapshots:
 
   csstype@3.2.3: {}
 
-  db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)):
+  db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)):
     optionalDependencies:
+      better-sqlite3: 13.1.1
       mysql2: 3.22.0(@types/node@25.6.0)
 
   debug@3.2.7:
@@ -6536,12 +6533,6 @@ snapshots:
 
   muggle-string@0.4.1: {}
 
-  mysql-memory-server@1.16.0:
-    dependencies:
-      adm-zip: 0.6.1
-      semver: 7.8.5
-      signal-exit: 4.1.0
-
   mysql2@3.22.0(@types/node@25.6.0):
     dependencies:
       '@types/node': 25.6.0
@@ -6570,7 +6561,7 @@ snapshots:
 
   negotiator@0.6.3: {}
 
-  nitropack@2.13.3(mysql2@3.22.0(@types/node@25.6.0))(srvx@0.11.15):
+  nitropack@2.13.3(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0))(srvx@0.11.15):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.4.2
       '@rollup/plugin-alias': 6.0.0(rollup@4.60.1)
@@ -6591,7 +6582,7 @@ snapshots:
       cookie-es: 2.0.1
       croner: 10.0.1
       crossws: 0.3.5
-      db0: 0.3.4(mysql2@3.22.0(@types/node@25.6.0))
+      db0: 0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0))
       defu: 6.1.7
       destr: 2.0.5
       dot-prop: 10.1.0
@@ -6637,7 +6628,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       unimport: 6.1.0
       unplugin-utils: 0.3.1
-      unstorage: 1.17.5(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)
+      unstorage: 1.17.5(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)
       untyped: 2.0.0
       unwasm: 0.5.3
       youch: 4.1.1
@@ -6676,6 +6667,8 @@ snapshots:
 
   node-addon-api@7.1.1: {}
 
+  node-addon-api@8.9.2: {}
+
   node-fetch-native@1.6.7: {}
 
   node-fetch@2.7.0:
@@ -6709,16 +6702,16 @@ snapshots:
     dependencies:
       boolbase: 1.0.0
 
-  nuxt@3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(cac@6.7.14)(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3):
+  nuxt@3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(better-sqlite3@13.1.1)(cac@6.7.14)(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3):
     dependencies:
       '@dxup/nuxt': 0.4.0(magicast@0.5.2)(typescript@6.0.2)
       '@nuxt/cli': 3.34.0(@nuxt/schema@3.21.2)(cac@6.7.14)(magicast@0.5.2)
       '@nuxt/devtools': 3.2.4(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(vue@3.5.32(typescript@6.0.2))
       '@nuxt/kit': 3.21.2(magicast@0.5.2)
-      '@nuxt/nitro-server': 3.21.2(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(nuxt@3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(cac@6.7.14)(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3))(srvx@0.11.15)(typescript@6.0.2)
+      '@nuxt/nitro-server': 3.21.2(better-sqlite3@13.1.1)(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(nuxt@3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(better-sqlite3@13.1.1)(cac@6.7.14)(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3))(srvx@0.11.15)(typescript@6.0.2)
       '@nuxt/schema': 3.21.2
       '@nuxt/telemetry': 2.8.0(@nuxt/kit@3.21.2(magicast@0.5.2))
-      '@nuxt/vite-builder': 3.21.2(@types/node@25.6.0)(magicast@0.5.2)(nuxt@3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(cac@6.7.14)(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(terser@5.46.1)(typescript@6.0.2)(vue@3.5.32(typescript@6.0.2))(yaml@2.8.3)
+      '@nuxt/vite-builder': 3.21.2(@types/node@25.6.0)(magicast@0.5.2)(nuxt@3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@types/node@25.6.0)(@vue/compiler-sfc@3.5.32)(better-sqlite3@13.1.1)(cac@6.7.14)(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1)(magicast@0.5.2)(mysql2@3.22.0(@types/node@25.6.0))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@6.0.2)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(yaml@2.8.3))(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(terser@5.46.1)(typescript@6.0.2)(vue@3.5.32(typescript@6.0.2))(yaml@2.8.3)
       '@unhead/vue': 2.1.13(vue@3.5.32(typescript@6.0.2))
       '@vue/shared': 3.5.32
       c12: 3.3.4(magicast@0.5.2)
@@ -7407,8 +7400,6 @@ snapshots:
 
   semver@7.7.4: {}
 
-  semver@7.8.5: {}
-
   send@1.2.1:
     dependencies:
       debug: 4.4.3
@@ -7817,7 +7808,7 @@ snapshots:
       picomatch: 4.0.4
       webpack-virtual-modules: 0.6.2
 
-  unstorage@1.17.5(db0@0.3.4(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1):
+  unstorage@1.17.5(db0@0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0)))(ioredis@5.10.1):
     dependencies:
       anymatch: 3.1.3
       chokidar: 5.0.0
@@ -7828,7 +7819,7 @@ snapshots:
       ofetch: 1.5.1
       ufo: 1.6.3
     optionalDependencies:
-      db0: 0.3.4(mysql2@3.22.0(@types/node@25.6.0))
+      db0: 0.3.4(better-sqlite3@13.1.1)(mysql2@3.22.0(@types/node@25.6.0))
       ioredis: 5.10.1
 
   untun@0.1.3:

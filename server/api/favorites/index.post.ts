@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
     let favorited = false
     if ((del as any).affectedRows === 0) {
       await conn.execute(
-        'INSERT IGNORE INTO favorites (user_id, bank_id, question_id) VALUES (?, ?, ?)',
+        'INSERT OR IGNORE INTO favorites (user_id, bank_id, question_id) VALUES (?, ?, ?)',
         [userId, bankId, questionId]
       )
       favorited = true

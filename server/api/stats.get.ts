@@ -1,5 +1,5 @@
 // 学习报告：总览 + 近 7 天练习 + 各科目正确率 + 答题时段分布
-// 连接池已统一会话时区为 +08:00（见 server/utils/db.ts），日期/小时直接取库内值即可
+// 库内时间列统一为东八区字符串（见 scripts/migrate.js 的 DEFAULT），直接取值即可
 export default defineEventHandler(async (event) => {
   const userId = requireUserId(event)
   const db = useDb()
@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
   }))
 
   const [hourRows] = await db.execute(
-    'SELECT HOUR(created_at) AS h, COUNT(*) AS c FROM histories WHERE user_id = ? GROUP BY h',
+    'SELECT CAST(strftime(\'%H\', created_at) AS INTEGER) AS h, COUNT(*) AS c FROM histories WHERE user_id = ? GROUP BY CAST(strftime(\'%H\', created_at) AS INTEGER)',
     [userId]
   )
   const dist = { morning: 0, noon: 0, evening: 0 }

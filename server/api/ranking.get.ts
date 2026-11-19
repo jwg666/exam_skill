@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
 
   const [rows] = await db.execute(
     `SELECT id, name, total_answered, total_correct, streak,
-            CASE WHEN total_answered > 0 THEN ROUND(total_correct / total_answered * 100) ELSE 0 END AS accuracy
+            CASE WHEN total_answered > 0 THEN ROUND(total_correct * 100.0 / total_answered) ELSE 0 END AS accuracy
      FROM users
      ORDER BY total_answered DESC, total_correct DESC
      LIMIT 20`

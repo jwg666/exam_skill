@@ -115,14 +115,17 @@ export default defineEventHandler(async (event) => {
 
     for (const qId of wrongQuestions) {
       await conn.execute(
-        'INSERT IGNORE INTO wrong_books (user_id, bank_id, question_id) VALUES (?, ?, ?)',
+        'INSERT OR IGNORE INTO wrong_books (user_id, bank_id, question_id) VALUES (?, ?, ?)',
         [userId, bankId, qId]
       )
     }
 
     await conn.execute(
       `INSERT INTO user_bank_progress (user_id, bank_id, done, last_index) VALUES (?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE done = GREATEST(done, VALUES(done)), last_index = VALUES(last_index)`,
+       ON CONFLICT(user_id, bank_id) DO UPDATE SET
+         done = MAX(done, excluded.done),
+         last_index = excluded.last_index,
+         updated_at = datetime('now', '+8 hours')`,
       [userId, bankId, total, Math.max(total - 1, 0)]
     )
 

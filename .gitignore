@@ -24,3 +24,11 @@ logs
 !.env.example
 .claude/
 .vercel
+
+# SQLite 数据文件（本地开发库）
+data/
+.data-smoke/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.server-package.json

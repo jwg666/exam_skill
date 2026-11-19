@@ -35,6 +35,9 @@ for (const dir of fs.readdirSync(outNM)) {
 console.log('缺失依赖:', [...missing].join(', ') || '无');
 // 从 .pnpm store 提取精确版本：目录名 <name#@+>@<version>_<peerHash>，版本在第一个 _ 之前
 const deps = {};
+// better-sqlite3：Nitro 会把全平台预编译包拷入产物（自带 linux-x64.node，可直接运行）；
+// 此处仍列入服务器补装清单兜底，防止产物拷贝不完整时运行时解析失败
+try { deps['better-sqlite3'] = require(path.resolve('node_modules/better-sqlite3/package.json')).version; } catch {}
 if (missing.size) {
   const all = fs.readdirSync(path.resolve('node_modules/.pnpm'));
   for (const dep of missing) {

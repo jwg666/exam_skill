@@ -6,12 +6,9 @@ export default defineNuxtConfig({
   // SSR 水合必然与服务端空壳不一致，关闭 SSR 改为纯 SPA 渲染
   ssr: false,
   runtimeConfig: {
-    // 显式从环境变量取值（兼容 dev 的 .env 与生产的环境注入）；变量名保持 DATABASE_* / AUTH_SECRET
-    databaseHost: process.env.DATABASE_HOST || '127.0.0.1',
-    databasePort: process.env.DATABASE_PORT || '3306',
-    databaseUser: process.env.DATABASE_USER || 'root',
-    databasePassword: process.env.DATABASE_PASSWORD || '',
-    databaseName: process.env.DATABASE_NAME || 'exam_skill',
+    // SQLite 库文件路径（相对 cwd 或绝对路径）；数据库为应用同机 SQLite，
+    // 变量名保持 DATABASE_FILE
+    databaseFile: process.env.DATABASE_FILE || './data/exam.sqlite',
     authSecret: process.env.AUTH_SECRET || 'dev-secret-change-me'
   },
   modules: [

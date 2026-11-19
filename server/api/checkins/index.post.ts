@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   try {
     await conn.beginTransaction()
     const [r] = await conn.execute(
-      'INSERT IGNORE INTO checkins (user_id, date_str) VALUES (?, ?)',
+      'INSERT OR IGNORE INTO checkins (user_id, date_str) VALUES (?, ?)',
       [userId, today]
     )
     const inserted = (r as any).affectedRows > 0
@@ -20,7 +20,8 @@ export default defineEventHandler(async (event) => {
     const newlyUnlocked: any[] = []
 
     if (inserted) {
-      const [uRows] = await conn.execute('SELECT streak FROM users WHERE id = ? FOR UPDATE', [userId])
+      // BEGIN IMMEDIATE 已串行化写事务，无需 FOR UPDATE 行锁
+      const [uRows] = await conn.execute('SELECT streak FROM users WHERE id = ?', [userId])
       const prev = Number((uRows as any[])[0]?.streak || 0)
       const [y] = await conn.execute(
         'SELECT id FROM checkins WHERE user_id = ? AND date_str = ?',

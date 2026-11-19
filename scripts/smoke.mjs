@@ -1,8 +1,9 @@
-// 端到端冒烟测试：嵌入式 MySQL + 生产构建 + HTTP 全链路
+// 端到端冒烟测试：临时 SQLite 库 + 生产构建 + HTTP 全链路
 // 前置：pnpm build 已完成（.output/ 存在）
-import { createDB } from 'mysql-memory-server'
+import Database from 'better-sqlite3'
+import { rmSync, mkdirSync, existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { spawnSync, spawn } from 'node:child_process'
-import mysql from 'mysql2/promise'
 
 const PORT = 3210
 const results = []
@@ -31,17 +32,22 @@ async function waitForServer(url, timeoutMs = 60000) {
   throw new Error('server did not start in time')
 }
 
-console.log('[1/5] 启动嵌入式 MySQL…')
-const db = await createDB({ dbName: 'exam_skill', logLevel: 'ERROR' })
-console.log(`  MySQL ${db.mysql.version} 就绪，端口 ${db.port}`)
+console.log('[1/5] 准备临时 SQLite 库…')
+mkdirSync('.data-smoke', { recursive: true })
+const smokeFile = resolve('.data-smoke/smoke.sqlite')
+for (const f of [smokeFile, smokeFile + '-wal', smokeFile + '-shm']) {
+  if (existsSync(f)) rmSync(f)
+}
+
+const openDb = () => {
+  const db = new Database(smokeFile)
+  db.pragma('foreign_keys = ON')
+  return db
+}
 
 const env = {
   ...process.env,
-  DATABASE_HOST: '127.0.0.1',
-  DATABASE_PORT: String(db.port),
-  DATABASE_USER: db.username,
-  DATABASE_PASSWORD: '',
-  DATABASE_NAME: db.dbName,
+  DATABASE_FILE: smokeFile,
   AUTH_SECRET: 'smoke-test-secret',
   SMS_PROVIDER: 'mock',
   SMS_SEND_INTERVAL_MS: '2'
@@ -54,6 +60,7 @@ try {
   const s = spawnSync('node', ['seed_data.js'], { env, encoding: 'utf8' })
   if (s.status !== 0) throw new Error('seed 失败: ' + s.stderr)
   spawnSync('node', ['scripts/seed-assessment.js'], { env, encoding: 'utf8' })
+  spawnSync('node', ['scripts/seed-fun-quiz.js'], { env, encoding: 'utf8' })
   console.log('  ' + (s.stdout.trim().split('\n').pop() || 'seeded'))
 
   console.log('[3/5] 启动生产构建服务器…')
@@ -119,10 +126,10 @@ try {
 
   // 密码确为 bcrypt 哈希（短信注册账号为不可登录占位哈希）
   {
-    const conn = await mysql.createConnection({ host: '127.0.0.1', port: db.port, user: db.username, database: db.dbName })
-    const [rows] = await conn.query("SELECT password FROM users WHERE phone='13800138000'")
+    const conn = openDb()
+    const rows = conn.prepare("SELECT password FROM users WHERE phone='13800138000'").all()
     check('密码为 bcrypt 哈希存储', String(rows[0].password).startsWith('$2'))
-    await conn.end()
+    conn.close()
   }
 
   // ---- 鉴权拦截 ----
@@ -144,11 +151,11 @@ try {
   // ---- 题库与题目 ----
   r = await api('/api/banks')
   const bankIds = (r.body || []).map(b => b.id)
-  check('题库列表含 8 个题库（6 知识 + 2 测评）', r.status === 200 && bankIds.length === 8, `got ${bankIds.length}`)
+  check('题库列表含 9 个题库（7 知识 + 2 测评）', r.status === 200 && bankIds.length === 9, `got ${bankIds.length}`)
 
   r = await api('/api/banks/js')
   const qs = r.body?.questions || []
-  check('题库详情返回 12 题（含判断/多选）', qs.length === 12, `got ${qs.length}`)
+  check('题库详情返回 24 题（含判断/多选）', qs.length === 24, `got ${qs.length}`)
   const judge = qs.find(q => q.type === 'judge')
   const multi = qs.find(q => q.type === 'multi')
   check('判断题/多选题字段正确', judge?.opts?.length === 2 && Array.isArray(multi?.ans))
@@ -157,8 +164,8 @@ try {
   check('随机抽题返回 5 题', r.status === 200 && r.body.questions.length === 5)
 
   // ---- 交卷 ----
-  // 前 3 题故意答错，accuracy=75
-  const jsAnswers = qs.map((q, i) => (i < 3 ? (q.ans + 1) % q.opts.length : q.ans))
+  // 前 6 题故意答错，accuracy=75（18/24）
+  const jsAnswers = qs.map((q, i) => (i < 6 ? (q.ans + 1) % q.opts.length : q.ans))
   r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'js', timeSpent: 95, answers: jsAnswers }) }, token)
   check('交卷成功 accuracy=75', r.status === 200 && r.body.accuracy === 75, JSON.stringify(r.body).slice(0, 200))
   check('交卷触发 first_quiz 成就', (r.body?.newlyUnlocked || []).some(a => a.id === 'first_quiz'))
@@ -172,7 +179,7 @@ try {
 
   // ---- 错题本 ----
   r = await api('/api/wrong-book', {}, token)
-  check('错题本收录 3 题', r.status === 200 && r.body.length === 3, `got ${r.body?.length}`)
+  check('错题本收录 6 题', r.status === 200 && r.body.length === 6, `got ${r.body?.length}`)
   const wrongId = r.body?.[0]?.id
 
   r = await api(`/api/wrong-book?id=${wrongId}`, { method: 'DELETE' }, token)
@@ -195,12 +202,12 @@ try {
   check('历史记录 1 条且带题库名', r.body?.length === 1 && r.body[0].bankName === 'JavaScript高级')
 
   r = await api('/api/progress', {}, token)
-  check('刷题进度 js=12', r.body?.js === 12)
+  check('刷题进度 js=24', r.body?.js === 24)
 
   r = await api('/api/stats', {}, token)
   if (!(r.body?.accuracy === 75)) console.log('[debug] stats:', r.status, JSON.stringify(r.body)?.slice(0, 600))
   check('统计：正确率 75%', r.body?.accuracy === 75)
-  check('统计：本周今日 12 题', (r.body?.week || []).some(w => w.total === 12))
+  check('统计：本周今日 24 题', (r.body?.week || []).some(w => w.total === 24))
   check('统计：科目分组存在', (r.body?.byType || []).length === 1)
   check('统计：时段分布总数 1', Object.values(r.body?.timeDistribution || {}).reduce((a, b) => a + b, 0) === 1)
 
@@ -232,9 +239,9 @@ try {
   check('非管理员访问管理接口 403', r.status === 403)
 
   {
-    const conn = await mysql.createConnection({ host: '127.0.0.1', port: db.port, user: db.username, database: db.dbName })
-    await conn.query("UPDATE users SET is_admin=1 WHERE phone='13800138000'")
-    await conn.end()
+    const conn = openDb()
+    conn.prepare("UPDATE users SET is_admin=1 WHERE phone='13800138000'").run()
+    conn.close()
   }
 
   // 管理员用短信验证码重新登录获取 A 账号 token
@@ -295,7 +302,7 @@ try {
 
   // ---- 测评题库（MBTI / IQ）----
   r = await api('/api/banks/mbti')
-  check('MBTI 题库 28 题且不下发答案', r.status === 200 && r.body.questions.length === 28 && r.body.questions[0].ans === undefined)
+  check('MBTI 题库 120 题且不下发答案', r.status === 200 && r.body.questions.length === 120 && r.body.questions[0].ans === undefined)
   const mbtiAnswers = r.body.questions.map((_, i) => i % 2)
   r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'mbti', timeSpent: 120, answers: mbtiAnswers }) }, token)
   check('MBTI 交卷返回人格报告', r.status === 200 && r.body?.report?.kind === 'mbti' && /^[IE][SN][TF][JP]$/.test(r.body.report.typeCode || ''), JSON.stringify(r.body?.report).slice(0, 120))
@@ -309,29 +316,39 @@ try {
   check('MBTI 全选左侧维度百分比 100%', r.body?.report?.dims?.every((d) => d.leftPct === 100) === true)
 
   r = await api('/api/banks/iq')
-  check('IQ 题库 30 题且不下发答案', r.body.questions.length === 30 && r.body.questions[0].ans === undefined)
+  check('IQ 题库 90 题且不下发答案', r.body.questions.length === 90 && r.body.questions[0].ans === undefined)
   {
     // 从测试库取正确答案构造满分作答
-    const conn = await mysql.createConnection({ host: '127.0.0.1', port: db.port, user: db.username, database: db.dbName })
-    const [iqRows] = await conn.query("SELECT answer_index FROM questions WHERE bank_id = 'iq' ORDER BY sort_order ASC")
-    const iqPerfect = (iqRows).map((q) => q.answer_index)
-    const wrongBefore = await conn.query("SELECT COUNT(*) AS c FROM wrong_books WHERE user_id = (SELECT id FROM users WHERE phone='13800138000')")
-    await conn.end()
+    const conn = openDb()
+    const iqRows = conn.prepare("SELECT answer_index FROM questions WHERE bank_id = 'iq' ORDER BY sort_order ASC").all()
+    const iqPerfect = iqRows.map((q) => q.answer_index)
+    const wrongBefore = conn.prepare("SELECT COUNT(*) AS c FROM wrong_books WHERE user_id = (SELECT id FROM users WHERE phone='13800138000')").get()
+    conn.close()
 
     r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'iq', timeSpent: 600, answers: iqPerfect }) }, token)
     check('IQ 满分作答 IQ=145 极有天赋', r.status === 200 && r.body?.report?.kind === 'iq' && r.body.report.iq === 145 && r.body.report.tier === '极有天赋', JSON.stringify({ iq: r.body?.report?.iq, tier: r.body?.report?.tier }))
-    check('IQ 报告含五维分析', (r.body?.report?.byCat || []).length === 5, JSON.stringify(r.body?.report?.byCat))
+    check('IQ 报告含六维分析', (r.body?.report?.byCat || []).length === 6, JSON.stringify(r.body?.report?.byCat))
 
     const allWrong = iqPerfect.map(() => -1)
     r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'iq', timeSpent: 60, answers: allWrong }) }, token)
     check('IQ 全部未答 IQ=60', r.body?.report?.iq === 60)
 
-    const conn2 = await mysql.createConnection({ host: '127.0.0.1', port: db.port, user: db.username, database: db.dbName })
-    const [wrongAfter] = await conn2.query("SELECT COUNT(*) AS c FROM wrong_books WHERE user_id = (SELECT id FROM users WHERE phone='13800138000')")
-    check('测评作答不进错题本', Number((wrongAfter)[0].c) === Number(wrongBefore[0][0].c))
-    const [histRep] = await conn2.query("SELECT report FROM histories WHERE user_id = (SELECT id FROM users WHERE phone='13800138000') AND bank_id = 'mbti' AND report IS NOT NULL LIMIT 1")
-    check('报告已持久化到历史记录', (histRep).length === 1)
-    await conn2.end()
+    const conn2 = openDb()
+    const wrongAfter = conn2.prepare("SELECT COUNT(*) AS c FROM wrong_books WHERE user_id = (SELECT id FROM users WHERE phone='13800138000')").get()
+    check('测评作答不进错题本', Number(wrongAfter.c) === Number(wrongBefore.c))
+    const histRep = conn2.prepare("SELECT report FROM histories WHERE user_id = (SELECT id FROM users WHERE phone='13800138000') AND bank_id = 'mbti' AND report IS NOT NULL LIMIT 1").all()
+    check('报告已持久化到历史记录', histRep.length === 1)
+    conn2.close()
+  }
+
+  // ---- 趣味测验（普通题库：单选/判断/多选混合）----
+  r = await api('/api/banks/fun')
+  const funQs = r.body?.questions || []
+  check('趣味测验 52 题且下发答案', r.status === 200 && funQs.length === 52 && funQs[0].ans !== undefined)
+  if (funQs.length === 52) {
+    const funPerfect = funQs.map((q) => (Array.isArray(q.ans) ? [...q.ans].sort() : q.ans))
+    r = await api('/api/quiz/submit', { method: 'POST', body: JSON.stringify({ bankId: 'fun', timeSpent: 120, answers: funPerfect }) }, token)
+    check('趣味测验全对 100% 且无测评报告', r.body?.accuracy === 100 && !r.body?.report, JSON.stringify({ accuracy: r.body?.accuracy }))
   }
 
   // ---- 页面渲染抽查 ----
@@ -343,7 +360,10 @@ try {
   console.log('[5/5] 清理…')
   server.kill()
 } finally {
-  await db.stop()
+  // Windows 下刚 kill 的 server 进程可能仍握着 SQLite 句柄，清理尽力而为不阻塞结果
+  for (const f of [smokeFile, smokeFile + '-wal', smokeFile + '-shm']) {
+    try { if (existsSync(f)) rmSync(f) } catch { /* 文件尚被占用，留待下次运行覆盖 */ }
+  }
 }
 
 console.log('\n========== 冒烟测试结果 ==========')
